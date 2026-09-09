@@ -7,8 +7,9 @@ There are two ways in. The JSON API is the part the brief specifies; the counter
 a thin front end over that same API, laid out from the wireframe in the brief.
 
 - **Laravel** 12 · **PHP** 8.4 · **MySQL** 8+ / MariaDB (PostgreSQL works unchanged)
+- **Blade + Alpine.js + Tailwind 4** for the counter, orders and inventory screens
 - **Queue** on the database driver · **Mail** written to the log
-- **26 tests**, including one that launches six real processes at the same product to prove it
+- **36 tests**, including one that launches six real processes at the same product to prove it
   cannot be oversold
 
 ---
@@ -47,6 +48,35 @@ predictable emails for testing: `thomas@example.com` and `divya@example.com`.
 Confirmation emails are not sent over SMTP. `MAIL_MAILER=log` writes each rendered message to
 `storage/logs/laravel.log`, so you can watch the queue worker pick a job up and see the bill it
 produced.
+
+---
+
+## The screens
+
+| Route | What it does |
+| --- | --- |
+| `/` | **New Order.** Look a customer up by email, search the catalogue, build the bill, take cash. |
+| `/orders` | **Orders.** Every bill raised, newest first, filterable by customer email. |
+| `/orders/{order}` | **Bill.** A printable tax invoice with the change breakdown. |
+| `/products` | **Inventory.** Stock levels with a search and a low-stock filter. |
+
+The counter screen does the things a cashier actually needs and nothing else:
+
+- **Type-ahead product search** over name or code, driven from the keyboard — arrows to move,
+  Enter to add. Products already on the bill drop out of the results, and stock is shown on every
+  option so the cashier can see a short shelf before picking it.
+- **Customer lookup as you type.** A recognised email fills the name in and shows how many orders
+  that customer has; an unrecognised one flips the name field to required.
+- **Live totals** computed the same way the server computes them — integer paise, tax rounded per
+  line — so the figure on screen is the figure that gets saved.
+- **Change breakdown** into the notes and coins to hand back, updating as the cash amount is typed.
+- **Validation on both sides.** The client catches the obvious things before a request is made;
+  everything the server rejects is mapped back onto the field that caused it, with a toast
+  summarising what happened. Stock shortages highlight the offending row and say how many are left.
+
+`resources/js/money.js` deliberately mirrors `App\Support\Money` and `App\Support\CashDrawer`.
+The screen never decides what an order costs; it just avoids making the cashier wait for a round
+trip to find out.
 
 ---
 
@@ -131,9 +161,12 @@ The threshold resolves in three steps, most specific first:
 2. the product's own `low_stock_threshold` column, for lines that move faster than the rest,
 3. `INVENTORY_LOW_STOCK_THRESHOLD` in `.env` (defaults to 10).
 
-### Supporting endpoint
+### Supporting endpoints
 
 `GET /api/products` backs the picker on the counter screen and accepts `?search=`.
+
+`GET /api/customers/lookup?email=` returns a customer and their order count, or `404`. The counter
+screen uses it to fill in the name of a returning customer; a `404` is the signal to ask for one.
 
 ---
 
@@ -229,7 +262,7 @@ php artisan test
 ```
 
 ```
-Tests:  26 passed (94 assertions)
+Tests:  36 passed (126 assertions)
 ```
 
 The suite runs on in-memory SQLite and takes a few seconds. Beyond the happy path it covers the
@@ -245,6 +278,9 @@ cases I would expect to break in production:
 - per-line tax rounding, so the printed lines add up to the printed total
 - the low-stock threshold resolving through all three of its levels
 - the confirmation job is queued for the right order, and only after the transaction commits
+- the customer lookup returns a clean `404` for an unknown email, which is what the counter screen
+  reads as "new customer"
+- each screen is asserted on the data it puts in front of the user, not just a `200`
 
 ---
 
@@ -254,9 +290,13 @@ The brief asked for these to be written down rather than asked about.
 
 **A UI was built, though only API endpoints were required.** The wireframe shows fields the
 functional requirements never mention — cash tendered, balance to return, a denomination
-breakdown — so I took the screen as part of the intended scope and implemented those too. It is
-deliberately thin: a Blade page and about 200 lines of plain JavaScript posting to the same
-`/api/orders` endpoint. No SPA framework, because nothing here needed one.
+breakdown — so I took the screen as part of the intended scope, and added the two screens a counter
+needs alongside it: order history and inventory.
+
+The stack is Blade, Tailwind and Alpine.js. No SPA, no build-time API client, no duplicated
+routing: the pages are server-rendered and Alpine handles the parts that genuinely need to be
+interactive — the type-ahead, the live totals, validation state. That keeps the whole front end at
+roughly 400 lines of JavaScript against an API a reviewer can also drive with curl.
 
 **Money is calculated in integer paise.** Floats are fine for display and wrong for arithmetic.
 `App\Support\Money` converts to paise, does the sums, and converts back once. Columns stay
@@ -327,6 +367,13 @@ app/
   Services/OrderTotals.php            Line pricing and tax rounding
   Support/Money.php                   Integer-paise arithmetic
   Support/CashDrawer.php              Change split into notes and coins
-resources/js/billing.js               Counter screen behaviour
+resources/js/
+  money.js                            Mirrors Money and CashDrawer so totals stay live on screen
+  components/orderForm.js             Counter screen: type-ahead, totals, validation, submit
+  stores/toasts.js                    Shared success and failure notifications
+resources/views/
+  components/                         Blade UI kit: field, stat, stock-badge, empty-state
+  layouts/app.blade.php               Shell, navigation, toast outlet
+  billing/ orders/ products/          The four screens
 tests/Feature/ConcurrentOrderTest.php Six real processes against one product
 ```
