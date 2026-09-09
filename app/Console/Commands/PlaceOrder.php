@@ -9,11 +9,6 @@ use App\Services\OrderService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
-/**
- * Places an order from the command line. Handy for a quick smoke test, and it
- * is what the concurrency test launches in parallel to prove that two tills
- * cannot sell the same last unit.
- */
 class PlaceOrder extends Command
 {
     protected $signature = 'orders:place

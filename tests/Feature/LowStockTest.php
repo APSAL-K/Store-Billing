@@ -30,7 +30,6 @@ class LowStockTest extends TestCase
     {
         config(['inventory.low_stock_threshold' => 10]);
 
-        // Below the product's own threshold but comfortably above the default.
         $fastMover = Product::factory()->withStock(30)->create(['low_stock_threshold' => 40]);
         Product::factory()->withStock(30)->create(['low_stock_threshold' => null]);
 

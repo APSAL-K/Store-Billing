@@ -7,9 +7,6 @@ use App\Models\Order;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * Builds an order shell. Real orders are created through OrderService so that
- * stock and totals stay consistent; this exists for read-side tests.
- *
  * @extends Factory<Order>
  */
 class OrderFactory extends Factory

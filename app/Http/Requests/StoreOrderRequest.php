@@ -54,11 +54,6 @@ class StoreOrderRequest extends FormRequest
         }
     }
 
-    /**
-     * Stock is deliberately not validated here. Availability can change between
-     * validation and the write, so the only trustworthy check is the one the
-     * OrderService performs inside its locked transaction.
-     */
     private function customerIsOnFile(): bool
     {
         $email = $this->input('customer.email');

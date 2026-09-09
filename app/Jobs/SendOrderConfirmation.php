@@ -20,10 +20,6 @@ class SendOrderConfirmation implements ShouldQueue
      */
     public array $backoff = [10, 60, 300];
 
-    /**
-     * The order id rather than the model itself: by the time the worker picks
-     * this up the order may have been touched, and we want the current state.
-     */
     public function __construct(public readonly int $orderId) {}
 
     public function handle(): void
@@ -31,8 +27,6 @@ class SendOrderConfirmation implements ShouldQueue
         $order = Order::with(['customer', 'items.product'])->find($this->orderId);
 
         if ($order === null) {
-            // The order was rolled back or removed before the worker got here.
-            // Nothing to send, and nothing worth retrying.
             return;
         }
 

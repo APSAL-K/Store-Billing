@@ -2,10 +2,6 @@
 
 namespace App\Support;
 
-/**
- * Splits the change owed to a customer into the notes and coins the counter
- * actually holds, largest first.
- */
 final class CashDrawer
 {
     /**

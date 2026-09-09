@@ -1,16 +1,32 @@
 # Store Order & Inventory Mini-System
 
-A small Laravel application for a retail counter: pick products against a catalogue, bill a
-customer, and keep stock in sync. Built as a take-home assignment for Mallow Technologies.
+A Laravel application for a retail counter: bill a customer against a product catalogue, keep stock
+in sync, and edit or void a bill afterwards without the stock ledger drifting.
 
-There are two ways in. The JSON API is the part the brief specifies; the counter screen at `/` is
-a thin front end over that same API, laid out from the wireframe in the brief.
+Built as a take-home assignment for Mallow Technologies. The JSON API is the part the brief
+specifies; the screens on top of it use that same API.
 
-- **Laravel** 12 · **PHP** 8.4 · **MySQL** 8+ / MariaDB (PostgreSQL works unchanged)
-- **Blade + Alpine.js + Tailwind 4** for the counter, orders and inventory screens
-- **Queue** on the database driver · **Mail** written to the log
-- **36 tests**, including one that launches six real processes at the same product to prove it
-  cannot be oversold
+**Laravel 12** · **PHP 8.4** · **MySQL 8+ / MariaDB** (PostgreSQL works unchanged) ·
+**Blade + Alpine.js + Tailwind 4** · **59 tests**
+
+![Dashboard](docs/screenshots/01-dashboard.png)
+
+---
+
+## Contents
+
+- [Setup](#setup)
+- [What it does](#what-it-does)
+- [The screens](#the-screens)
+- [The API](#the-api)
+- [Schema](#schema)
+- [No overselling under concurrent requests](#no-overselling-under-concurrent-requests)
+- [Editing and voiding a bill](#editing-and-voiding-a-bill)
+- [Tests](#tests)
+- [How the brief is covered](#how-the-brief-is-covered)
+- [Assumptions and judgment calls](#assumptions-and-judgment-calls)
+- [Project layout](#project-layout)
+- [AI assistance](#ai-assistance)
 
 ---
 
@@ -25,15 +41,15 @@ cp .env.example .env
 php artisan key:generate
 ```
 
-Point the `DB_*` block in `.env` at your server and create the schema:
+Point the `DB_*` block in `.env` at your server, then create and fill the schema:
 
 ```bash
 mysql -u root -p -e "CREATE DATABASE store_billing"
 php artisan migrate --seed
 ```
 
-Build the front end and start the app. The queue worker is a separate process, which is the
-point of putting the confirmation email on a queue in the first place:
+Build the front end and start the app. The queue worker is a separate process, which is the point
+of putting the confirmation email on a queue in the first place:
 
 ```bash
 npm install && npm run build     # Node 20+ (Vite 7 / Tailwind 4)
@@ -41,48 +57,122 @@ php artisan serve                # http://localhost:8000
 php artisan queue:work           # in a second terminal
 ```
 
-The seed leaves you a catalogue of fifteen products (a few deliberately short on stock so the
-low-stock alert has something to show), ten customers, and twelve past orders. Two customers have
-predictable emails for testing: `thomas@example.com` and `divya@example.com`.
+The seed leaves you fifteen products (a few deliberately short on stock so the low-stock alert has
+something to show), ten customers and twelve past bills. Two customers have predictable emails for
+testing: `thomas@example.com` and `divya@example.com`.
 
-Confirmation emails are not sent over SMTP. `MAIL_MAILER=log` writes each rendered message to
-`storage/logs/laravel.log`, so you can watch the queue worker pick a job up and see the bill it
-produced.
+Confirmation emails do not go over SMTP. `MAIL_MAILER=log` writes each rendered message to
+`storage/logs/laravel.log`, so you can watch the worker pick a job up and read the bill it produced.
+
+---
+
+## What it does
+
+**Billing**
+
+- Type-ahead product search over name or code, driven from the keyboard
+- Line quantities clamped to stock, with live subtotal, per-line tax and grand total
+- Cash tendered, balance to return, and the notes and coins to hand back
+- Customer looked up by email as it is typed; a returning customer's name fills itself in
+- Validation on both sides, with server errors mapped back onto the field that caused them
+
+**Orders**
+
+- Full bill history, filterable by customer email
+- A printable tax invoice for every bill
+- **Edit a bill** — change lines, quantities or the customer; stock is reconciled as a delta
+- **Void a bill** — every unit goes back on the shelf, the bill is kept for the audit trail
+
+**Inventory**
+
+- Catalogue with stock levels, search and a low-stock filter
+- **Restock** any product, recorded as its own movement
+- Per-product **stock ledger**: every change to stock with the bill that caused it
+
+**Dashboard**
+
+- Today's revenue, units and tax; a fourteen-day revenue trend
+- Best sellers, recent bills, and what needs reordering
+
+**Customers**
+
+- Ranked by lifetime value, with bill count and last purchase
+- A per-customer page with their full history, voided bills included
 
 ---
 
 ## The screens
 
-| Route | What it does |
+| Route | Screen |
 | --- | --- |
-| `/` | **New Order.** Look a customer up by email, search the catalogue, build the bill, take cash. |
-| `/orders` | **Orders.** Every bill raised, newest first, filterable by customer email. |
-| `/orders/{order}` | **Bill.** A printable tax invoice with the change breakdown. |
-| `/products` | **Inventory.** Stock levels with a search and a low-stock filter. |
+| `/` | Dashboard |
+| `/pos` | New Order |
+| `/orders` | Orders, filterable by email or voided |
+| `/orders/{order}` | Printable bill |
+| `/orders/{order}/edit` | Edit a bill |
+| `/customers`, `/customers/{customer}` | Customers and their history |
+| `/products`, `/products/{product}` | Inventory and a product's stock ledger |
 
-The counter screen does the things a cashier actually needs and nothing else:
+### New Order
 
-- **Type-ahead product search** over name or code, driven from the keyboard — arrows to move,
-  Enter to add. Products already on the bill drop out of the results, and stock is shown on every
-  option so the cashier can see a short shelf before picking it.
-- **Customer lookup as you type.** A recognised email fills the name in and shows how many orders
-  that customer has; an unrecognised one flips the name field to required.
-- **Live totals** computed the same way the server computes them — integer paise, tax rounded per
-  line — so the figure on screen is the figure that gets saved.
-- **Change breakdown** into the notes and coins to hand back, updating as the cash amount is typed.
-- **Validation on both sides.** The client catches the obvious things before a request is made;
-  everything the server rejects is mapped back onto the field that caused it, with a toast
-  summarising what happened. Stock shortages highlight the offending row and say how many are left.
+Search the catalogue, add lines, take cash. Totals update as you type.
 
-`resources/js/money.js` deliberately mirrors `App\Support\Money` and `App\Support\CashDrawer`.
-The screen never decides what an order costs; it just avoids making the cashier wait for a round
-trip to find out.
+![New order](docs/screenshots/03-new-order-filled.png)
+
+The product picker filters on name or code. Arrow keys move, Enter adds, and products already on
+the bill drop out of the results. Every option shows its price and what is left on the shelf.
+
+![Product search](docs/screenshots/04-product-search.png)
+
+### Validation
+
+The client catches the obvious cases before a request is made.
+
+![Validation](docs/screenshots/05-validation-errors.png)
+
+Anything the server rejects comes back onto the field that caused it. A stock shortage highlights
+the offending row and says how many are actually left — that number is the server's answer, not the
+browser's guess.
+
+![Stock shortage](docs/screenshots/06-stock-shortage.png)
+
+### Orders and the bill
+
+![Orders](docs/screenshots/07-orders.png)
+
+![Bill](docs/screenshots/08-bill.png)
+
+### Editing and voiding
+
+Editing reopens the bill with its lines loaded and the units it already holds added back to
+sellable stock, so a cashier can raise a quantity without the screen claiming there is none left.
+
+![Edit a bill](docs/screenshots/09-edit-bill.png)
+
+![Void a bill](docs/screenshots/10-void-dialog.png)
+
+### Customers and inventory
+
+![Customers](docs/screenshots/11-customers.png)
+
+![Inventory](docs/screenshots/12-inventory.png)
+
+Every product carries its own ledger. Sales, edits, voids and restocks all land here with the
+balance they left behind.
+
+![Stock ledger](docs/screenshots/13-stock-ledger.png)
+
+![Restock](docs/screenshots/14-restock-dialog.png)
+
+### On a phone
+
+<img src="docs/screenshots/15-mobile.png" width="320" alt="Dashboard on a phone">
 
 ---
 
 ## The API
 
-### Create an order
+### Create a bill
 
 `POST /api/orders`
 
@@ -100,8 +190,8 @@ curl -X POST http://localhost:8000/api/orders \
 ```
 
 Validates the request shape, takes a row lock on every product in the order, checks stock, prices
-each line with its own tax rate, writes the order, deducts stock, and queues the confirmation
-email. `201` with the created order:
+each line with its own tax rate, writes the bill, deducts stock, and queues the confirmation email.
+`201` with the created order:
 
 ```json
 {
@@ -144,11 +234,32 @@ A short shelf returns `422` naming every product that could not be filled, and n
 }
 ```
 
-### A customer's order history
+### Edit a bill
+
+`PUT /api/orders/{order}`
+
+Takes the same body as `POST`. The line set is replaced, stock is reconciled as a delta, and the
+bill is repriced. Editing a voided bill returns `409`.
+
+### Void a bill
+
+`DELETE /api/orders/{order}`
+
+```bash
+curl -X DELETE http://localhost:8000/api/orders/13 \
+  -H 'Content-Type: application/json' -H 'Accept: application/json' \
+  -d '{ "reason": "Customer changed their mind" }'
+```
+
+`204`. Every unit goes back on the shelf and the bill is soft deleted with its reason. Voiding a
+voided bill returns `409`.
+
+### A customer's bill history
 
 `GET /api/orders?email=thomas@example.com&per_page=15`
 
-Most recent first, paginated. `404` if that email has never bought anything.
+Most recent first, paginated. `404` if that email has never bought anything. Voided bills are
+excluded unless you pass `include_voided=1`.
 
 ### Products running low
 
@@ -161,12 +272,22 @@ The threshold resolves in three steps, most specific first:
 2. the product's own `low_stock_threshold` column, for lines that move faster than the rest,
 3. `INVENTORY_LOW_STOCK_THRESHOLD` in `.env` (defaults to 10).
 
+### Restock a product
+
+`POST /api/products/{product}/restock`
+
+```bash
+curl -X POST http://localhost:8000/api/products/2/restock \
+  -H 'Content-Type: application/json' -H 'Accept: application/json' \
+  -d '{ "quantity": 50, "note": "Supplier invoice 4471" }'
+```
+
 ### Supporting endpoints
 
 `GET /api/products` backs the picker on the counter screen and accepts `?search=`.
 
-`GET /api/customers/lookup?email=` returns a customer and their order count, or `404`. The counter
-screen uses it to fill in the name of a returning customer; a `404` is the signal to ask for one.
+`GET /api/customers/lookup?email=` returns a customer and their bill count, or `404`. The counter
+screen uses it to fill in the name of a returning customer; the `404` is the signal to ask for one.
 
 ---
 
@@ -182,26 +303,30 @@ customers ──< orders ──< order_items >── products
 | --- | --- |
 | `products` | `code` unique, `unit_price`, `tax_percentage`, `stock_on_hand`, optional `low_stock_threshold` |
 | `customers` | `email` unique, stored lower-cased |
-| `orders` | totals, plus `amount_tendered` / `change_due` for cash sales |
+| `orders` | totals, `amount_tendered` / `change_due`, `void_reason`, soft deletes |
 | `order_items` | quantity and a **snapshot** of price and tax rate, unique per `(order_id, product_id)` |
 | `stock_movements` | append-only ledger of every change to `stock_on_hand` |
 
-Three decisions worth calling out.
+Four decisions worth calling out.
 
 **Prices are snapshotted onto the order line.** `order_items` stores the `unit_price` and
 `tax_percentage` that applied at the moment of sale. Repricing a product tomorrow must not quietly
 rewrite last week's bills, and reprinting an old receipt has to produce the same figures it did the
 first time.
 
-**`stock_movements` is a supporting table I judged necessary.** `products.stock_on_hand` alone tells
-you where stock is now but never how it got there. Every deduction writes a row with the change and
-the balance it left behind, so a mismatch between the shelf and the system can be traced back to the
-order that caused it. It is also the natural place to hang restocks and manual adjustments.
+**`stock_movements` is the supporting table the brief invites.** `products.stock_on_hand` alone
+tells you where stock is now but never how it got there. Every sale, edit, void and restock writes a
+row with the change and the balance it left behind, so a mismatch between the shelf and the system
+can be traced back to the bill that caused it. It is what the per-product ledger screen renders.
 
 **The bill number is derived, not stored.** `Order::reference` is an accessor that formats the
 primary key as `ORD-20260909-00013`. Storing it as a column would mean a second unique value to
 generate safely under concurrency and to keep in sync, for something that is a presentation of the
 id and nothing more.
+
+**Voided bills are soft deleted, not removed.** A tax invoice that has been handed to a customer is
+not something to delete a row for. The bill, its lines and its movements all stay; the bill simply
+stops counting towards revenue and history, and remains readable under the voided filter.
 
 ---
 
@@ -209,15 +334,16 @@ id and nothing more.
 
 This is the requirement I spent the most time on, so it is worth describing what it actually does.
 
-Order creation runs inside one transaction, in [`OrderService::place()`](app/Services/OrderService.php):
+Every write that touches stock runs inside one transaction in
+[`OrderService`](app/Services/OrderService.php):
 
-1. **Lock the rows.** Every product in the order is fetched with `lockForUpdate()`, ordered by id.
-   A second order touching the same product blocks here until the first one commits or rolls back.
-   Ordering by id matters: two orders holding overlapping products in different orders would
+1. **Lock the rows.** Every product involved is fetched with `lockForUpdate()`, ordered by id. A
+   second bill touching the same product blocks here until the first commits or rolls back.
+   Ordering by id matters: two bills holding overlapping products in different orders would
    deadlock, and a stable order removes that.
-2. **Check stock against the locked rows**, and reject the whole order if any line is short. It is
+2. **Check stock against the locked rows**, and reject the whole bill if any line is short. It is
    all or nothing — a partial fill would leave the counter with a bill that does not match the bag.
-3. **Deduct conditionally.** The decrement runs as
+3. **Apply the change conditionally.** A deduction runs as
    `where('stock_on_hand', '>=', $quantity)->decrement(...)` and the affected row count is checked.
    The lock already serialises things; this is the second line of defence, and it is what keeps the
    invariant on a driver without row locking.
@@ -230,9 +356,9 @@ check that can be trusted is the one holding the lock.
 
 ### Proving it
 
-`tests/Feature/ConcurrentOrderTest.php` does not simulate concurrency — it launches six separate
-`php artisan orders:place` processes at one product with two units in stock and waits for all of
-them:
+[`tests/Feature/ConcurrentOrderTest.php`](tests/Feature/ConcurrentOrderTest.php) does not simulate
+concurrency — it launches six separate `php artisan orders:place` processes at one product with two
+units in stock and waits for all of them:
 
 ```
 PASS  Tests\Feature\ConcurrentOrderTest
@@ -240,7 +366,7 @@ PASS  Tests\Feature\ConcurrentOrderTest
 ```
 
 Exactly two succeed, four are told the stock ran out, `stock_on_hand` lands on `0`, and there are
-exactly two orders. Removing either guard from `OrderService` makes it fail, which is the only real
+exactly two bills. Removing either guard from `OrderService` makes it fail, which is the only real
 evidence that the test is doing its job.
 
 It needs a server with row-level locking, so it runs on MySQL against a throwaway schema
@@ -255,6 +381,30 @@ php artisan orders:place --email=thomas@example.com --item=7:2 --item=10:1 --ten
 
 ---
 
+## Editing and voiding a bill
+
+Editing is the harder of the two, because stock has to be reconciled rather than simply taken.
+`OrderService::update()` compares the previous line quantities against the requested ones and
+applies **one delta per product**:
+
+| Change | Delta | Effect on stock |
+| --- | --- | --- |
+| Quantity 8 → 3 | `+5` | five units returned |
+| Quantity 3 → 9 | `-6` | six more taken, if available |
+| Line removed | `+quantity` | all its units returned |
+| Line added | `-quantity` | taken like a new sale |
+
+The whole reconciliation runs inside the same locked transaction as a new sale, over the union of
+the old and new product sets. If any product cannot cover its delta the edit is rejected and the
+bill is left exactly as it was — the tests assert that both the lines and the stock are unchanged
+after a failed edit.
+
+Voiding is the same machinery with every line as a positive delta, followed by a soft delete. Both
+operations write `stock_movements` rows tagged with their reason, so the ledger reads as a story:
+sale, bill edited, bill voided, restock.
+
+---
+
 ## Tests
 
 ```bash
@@ -262,25 +412,66 @@ php artisan test
 ```
 
 ```
-Tests:  36 passed (126 assertions)
+Tests:  59 passed (252 assertions)
 ```
 
 The suite runs on in-memory SQLite and takes a few seconds. Beyond the happy path it covers the
-cases I would expect to break in production:
+cases I would expect to break in production.
 
-- an order rejected for insufficient stock leaves **nothing** behind — no order, no stock movement,
-  no queued email, and the lines that *could* have been filled are still on the shelf
+**Creating a bill**
+- a bill rejected for insufficient stock leaves **nothing** behind — no order, no stock movement, no
+  queued email, and the lines that *could* have been filled are still on the shelf
 - a product with zero stock cannot be sold at all
 - repeated lines for the same product are merged rather than violating the per-order unique index
 - cash that does not cover the bill is refused before any stock moves
 - a returning customer is matched on email regardless of case, and keeps the name already on file
 - a name is required only the first time an email is seen
 - per-line tax rounding, so the printed lines add up to the printed total
-- the low-stock threshold resolving through all three of its levels
 - the confirmation job is queued for the right order, and only after the transaction commits
-- the customer lookup returns a clean `404` for an unknown email, which is what the counter screen
-  reads as "new customer"
+
+**Editing a bill**
+- reducing, increasing, adding and removing lines each move exactly the right number of units
+- an edit that cannot be stocked changes neither the bill nor the shelf
+- the adjustment is recorded as its own stock movement with the correct balance
+- cash that no longer covers a grown bill is refused
+
+**Voiding a bill**
+- every unit goes back, and the bill is kept as a soft-deleted record with its reason
+- a voided bill drops out of history unless explicitly asked for
+- voiding twice returns `409` and does **not** credit the stock a second time
+- a voided bill can be neither edited through the API nor opened in the edit screen
+
+**Inventory and reads**
+- the low-stock threshold resolving through all three of its levels
+- a restock lifts a product back out of the low-stock list, and its balance is recorded correctly
+- the customer lookup returns a clean `404` for an unknown email
+- the dashboard leaves voided bills out of revenue
 - each screen is asserted on the data it puts in front of the user, not just a `200`
+
+**Concurrency**
+- six real processes against one product, described above
+
+---
+
+## How the brief is covered
+
+| Requirement | Where |
+| --- | --- |
+| Products: name, unique code, price, tax percentage, stock | [`products` migration](database/migrations/2026_09_08_100100_create_products_table.php) |
+| Customers: name, unique email | [`customers` migration](database/migrations/2026_09_08_100200_create_customers_table.php) |
+| Orders: one customer, one or more lines, computed totals | [`orders`](database/migrations/2026_09_08_100300_create_orders_table.php), [`order_items`](database/migrations/2026_09_08_100400_create_order_items_table.php) |
+| Seed with factories and seeders | [`database/seeders`](database/seeders), [`database/factories`](database/factories) |
+| 1. Normalised schema, plus supporting tables | [Schema](#schema), [`stock_movements`](database/migrations/2026_09_08_100500_create_stock_movements_table.php) |
+| 2. Create-order endpoint with stock, tax and totals | [`OrderController@store`](app/Http/Controllers/Api/OrderController.php) → [`OrderService::place`](app/Services/OrderService.php) |
+| 3. Customer order history by email | [`OrderController@index`](app/Http/Controllers/Api/OrderController.php) |
+| 4. Low-stock endpoint, configurable threshold | [`ProductController@lowStock`](app/Http/Controllers/Api/ProductController.php), [`config/inventory.php`](config/inventory.php) |
+| 5. Queued job on order creation | [`SendOrderConfirmation`](app/Jobs/SendOrderConfirmation.php) |
+| 6. Feature and unit tests with edge cases | [`tests`](tests) — 59 tests |
+| 7. Safe under concurrent requests | [Concurrency](#no-overselling-under-concurrent-requests), [`ConcurrentOrderTest`](tests/Feature/ConcurrentOrderTest.php) |
+| Eloquent relationships, migrations, form-request validation | [`app/Models`](app/Models), [`app/Http/Requests`](app/Http/Requests) |
+| Thin controllers, logic in services | [`app/Services`](app/Services) — controllers validate, delegate, return a resource |
+| README with setup and assumptions | this file |
+| Prompt log | [`prompts/`](prompts/) |
 
 ---
 
@@ -290,21 +481,22 @@ The brief asked for these to be written down rather than asked about.
 
 **A UI was built, though only API endpoints were required.** The wireframe shows fields the
 functional requirements never mention — cash tendered, balance to return, a denomination
-breakdown — so I took the screen as part of the intended scope, and added the two screens a counter
-needs alongside it: order history and inventory.
+breakdown — so I took the screen as part of the intended scope, and added the screens a counter
+actually needs around it.
 
 The stack is Blade, Tailwind and Alpine.js. No SPA, no build-time API client, no duplicated
-routing: the pages are server-rendered and Alpine handles the parts that genuinely need to be
-interactive — the type-ahead, the live totals, validation state. That keeps the whole front end at
-roughly 400 lines of JavaScript against an API a reviewer can also drive with curl.
+routing: the pages are server-rendered and Alpine handles only the parts that genuinely need to be
+interactive.
 
 **Money is calculated in integer paise.** Floats are fine for display and wrong for arithmetic.
-`App\Support\Money` converts to paise, does the sums, and converts back once. Columns stay
-`decimal` so the database is readable and sortable.
+[`App\Support\Money`](app/Support/Money.php) converts to paise, does the sums, and converts back
+once. Columns stay `decimal` so the database is readable and sortable.
+[`resources/js/money.js`](resources/js/money.js) deliberately mirrors it so the figure on screen is
+the figure that gets saved.
 
 **Tax is applied per line and rounded there**, not on the order subtotal. Rounding once at the
-bottom is a rupee or two cheaper to compute and produces receipts whose lines do not add up to
-their own total, which customers notice.
+bottom is a rupee or two cheaper to compute and produces receipts whose lines do not add up to their
+own total, which customers notice.
 
 **The bill is rejected, never partially filled.** If any line is short, nothing is sold.
 
@@ -316,16 +508,28 @@ counter, so the breakdown covers the rupee part while `change_due` keeps the exa
 wireframe's own example (`₹22.80 → 1×20 + 1×2 + 1×1`) is inconsistent, as are its line totals
 against its subtotal, so I read it as a layout reference rather than a spec for the arithmetic.
 
-**The confirmation email is HTML, not a PDF attachment.** The wireframe annotates the Generate
-Bill button with "emails PDF to customer", but the functional requirement asks only that the queued
-job simulate sending a confirmation, and explicitly allows a log entry. Pulling in a PDF renderer for
-a mailer that never reaches SMTP seemed like weight without value, so the job renders a Markdown
-mailable of the bill. Swapping the body for an attachment is a change inside
-`SendOrderConfirmation`, not to anything around it.
+**Deleting a bill means voiding it.** Hard-deleting a tax invoice throws away the record of a
+transaction that really happened and leaves the stock ledger with a movement pointing at nothing.
+Voiding returns the stock, keeps the document, and records why. From the counter's point of view
+the bill is gone; from the auditor's it is still there.
+
+**Editing a bill re-sends the confirmation.** The customer's copy is now wrong, so the job is
+dispatched again with the revised bill. Voiding does not send anything — telling someone their bill
+was cancelled is a decision for whoever cancelled it, not an automatic email.
+
+**The edit screen counts the bill's own units as available.** A bill holding four units of a
+product that has six left can be raised to ten, because those four are only committed to that bill.
+The server checks the real delta under a lock regardless.
 
 **A customer is identified by email alone.** Name is required the first time an email is seen and
 optional afterwards; a returning customer keeps the name on file unless a new one is typed. Emails
 are normalised to lower case so `THOMAS@example.com` and `thomas@example.com` are one person.
+
+**The confirmation email is HTML, not a PDF attachment.** The wireframe annotates the Generate Bill
+button with "emails PDF to customer", but the functional requirement asks only that the queued job
+simulate sending a confirmation, and explicitly allows a log entry. Pulling in a PDF renderer for a
+mailer that never reaches SMTP seemed like weight without value, so the job renders a Markdown
+mailable and the bill screen is print-styled instead.
 
 **There is no authentication, so there are no `users` or `sessions` tables.** The default Laravel
 scaffolding for both was removed rather than left sitting unused in a schema the brief asked to be
@@ -334,15 +538,49 @@ smaller cost than shipping a schema with tables nobody can explain.
 
 **`GET /api/orders?email=` rather than a path segment.** Putting an email in the URL path invites
 encoding problems for addresses containing `+` or `.`, and a query parameter leaves room for the
-pagination options that a history endpoint wants anyway.
+pagination options a history endpoint wants anyway.
 
-**Stock is only ever deducted, never restored.** Returns and cancellations are outside the brief.
-`stock_movements` already carries a `reason` column, so adding them later is a new movement type
-rather than a change to the schema.
+**Products cannot be deleted** once they appear on a bill — the foreign key is `restrictOnDelete`.
+Deleting a product would orphan the history that the order-line snapshot exists to preserve.
 
-**Products are not soft-deleted and cannot be removed** once they appear on an order — the foreign
-key is `restrictOnDelete`. Deleting a product would orphan the history that the order-line snapshot
-exists to preserve.
+**The code carries no comments.** Reasoning that would have gone in a comment is in this README
+instead, next to the decision it explains. Docblocks are kept only where they carry types a reader
+or static analysis needs.
+
+---
+
+## Project layout
+
+```
+app/
+  Console/Commands/PlaceOrder.php     Command-line sale; the concurrency test runs it in parallel
+  Data/                               Readonly DTOs carrying a validated bill into the service
+  Exceptions/                         InsufficientStock, OrderNotEditable — both render themselves
+  Http/Controllers/Api/               JSON API: validate, delegate, return a resource
+  Http/Controllers/                   Screens: query, hand to a view
+  Http/Requests/                      Request shape only; stock is the service's business
+  Http/Resources/                     API response shaping
+  Jobs/SendOrderConfirmation.php      Queued, dispatched afterCommit
+  Mail/OrderConfirmation.php          Markdown mailable of the bill
+  Models/                             Product, Customer, Order, OrderItem, StockMovement
+  Services/OrderService.php           Locking, stock reconciliation, the transaction boundary
+  Services/OrderTotals.php            Line pricing and tax rounding
+  Services/InventoryService.php       Restocking
+  Services/DashboardMetrics.php       Dashboard queries, kept out of the controller
+  Support/Money.php                   Integer-paise arithmetic
+  Support/CashDrawer.php              Change split into notes and coins
+resources/js/
+  money.js                            Mirrors Money and CashDrawer so totals stay live on screen
+  components/orderForm.js             Counter screen: type-ahead, totals, validation, submit
+  components/voidOrder.js             Void confirmation
+  components/restockProduct.js        Restock dialog
+  stores/toasts.js                    Shared success and failure notifications
+resources/views/
+  components/                         Blade UI kit: field, stat, stock-badge, empty-state
+  layouts/app.blade.php               Shell, navigation, toast outlet
+  dashboard/ billing/ orders/ customers/ products/
+tests/Feature/ConcurrentOrderTest.php Six real processes against one product
+```
 
 ---
 
@@ -351,29 +589,3 @@ exists to preserve.
 AI tooling was used for this task, as the brief encourages. Screenshots of the prompts are in
 [`prompts/`](prompts/) alongside a written log of what was asked at each step and where I changed
 the direction the output was heading.
-
-## Project layout
-
-```
-app/
-  Console/Commands/PlaceOrder.php     Command-line sale; the concurrency test runs it in parallel
-  Data/                               Readonly DTOs carrying a validated order into the service
-  Exceptions/InsufficientStockException.php
-  Http/Controllers/Api/               Thin controllers: validate, delegate, return a resource
-  Http/Requests/StoreOrderRequest.php Request shape only; stock is the service's business
-  Http/Resources/                     API response shaping
-  Jobs/SendOrderConfirmation.php      Queued, dispatched afterCommit
-  Services/OrderService.php           Locking, stock checks, deduction, the transaction boundary
-  Services/OrderTotals.php            Line pricing and tax rounding
-  Support/Money.php                   Integer-paise arithmetic
-  Support/CashDrawer.php              Change split into notes and coins
-resources/js/
-  money.js                            Mirrors Money and CashDrawer so totals stay live on screen
-  components/orderForm.js             Counter screen: type-ahead, totals, validation, submit
-  stores/toasts.js                    Shared success and failure notifications
-resources/views/
-  components/                         Blade UI kit: field, stat, stock-badge, empty-state
-  layouts/app.blade.php               Shell, navigation, toast outlet
-  billing/ orders/ products/          The four screens
-tests/Feature/ConcurrentOrderTest.php Six real processes against one product
-```

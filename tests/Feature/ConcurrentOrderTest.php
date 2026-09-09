@@ -13,15 +13,6 @@ use Symfony\Component\Process\Process;
 use Tests\TestCase;
 use Throwable;
 
-/**
- * Requirement: if two orders for the same product land at nearly the same time
- * and only one unit is left, exactly one should succeed.
- *
- * A single-process test cannot prove that, so this one launches real, separate
- * PHP processes against a real MySQL server. It runs on a throwaway schema so
- * it never touches development data, and skips with a note if no server is
- * reachable.
- */
 class ConcurrentOrderTest extends TestCase
 {
     private const TILLS = 6;
@@ -72,9 +63,6 @@ class ConcurrentOrderTest extends TestCase
     }
 
     /**
-     * Start every till at once and wait for all of them, so the writes really do
-     * overlap rather than queueing up behind each other.
-     *
      * @return array<int, int> Exit code per process.
      */
     private function runTillsInParallel(Product $product): array

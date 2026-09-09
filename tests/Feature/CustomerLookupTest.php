@@ -31,10 +31,6 @@ class CustomerLookupTest extends TestCase
             ->assertJsonPath('data.email', 'thomas@example.com');
     }
 
-    /**
-     * The counter screen treats a 404 as "new customer" and asks for a name, so
-     * this has to stay a clean not-found rather than an error.
-     */
     public function test_it_returns_not_found_for_an_unknown_email(): void
     {
         $this->getJson('/api/customers/lookup?email=stranger@example.com')->assertNotFound();

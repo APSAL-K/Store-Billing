@@ -24,8 +24,6 @@ class CashDrawerTest extends TestCase
 
     public function test_it_ignores_paise_the_drawer_cannot_hand_back(): void
     {
-        // 22.80 rounds down to notes and coins worth 22; the exact figure is
-        // still what the order stores and prints.
         $this->assertSame([
             ['denomination' => 20, 'count' => 1],
             ['denomination' => 2, 'count' => 1],

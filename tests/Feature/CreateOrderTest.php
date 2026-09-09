@@ -40,7 +40,6 @@ class CreateOrderTest extends TestCase
             ],
         ]);
 
-        // 3 x 62.00 = 186.00 + 18% tax (33.48); 1 x 320.00 = 320.00 + 5% tax (16.00)
         $response->assertCreated()
             ->assertJsonPath('data.totals.subtotal', '506.00')
             ->assertJsonPath('data.totals.tax', '49.48')
@@ -99,8 +98,6 @@ class CreateOrderTest extends TestCase
             ->assertJsonPath('shortages.0.requested', 5)
             ->assertJsonPath('shortages.0.available', 2);
 
-        // The whole order is rejected, so the line that could have been filled
-        // must not have been taken out of stock either.
         $this->assertSame(50, $inStock->refresh()->stock_on_hand);
         $this->assertSame(2, $almostOut->refresh()->stock_on_hand);
         $this->assertDatabaseCount('orders', 0);

@@ -7,10 +7,6 @@ use App\Models\Product;
 use App\Support\Money;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
-/**
- * Prices an order line by line. Tax is applied per line and rounded there, so
- * the printed line totals always add up to the grand total on the bill.
- */
 class OrderTotals
 {
     /**

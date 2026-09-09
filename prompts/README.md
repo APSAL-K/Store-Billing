@@ -71,3 +71,38 @@ is the only evidence that it is testing something.
 Asked for the counter screen from the wireframe: customer fields, product rows with live line
 totals, the low-stock panel, and the cash-tendered and balance-to-return block. Kept to Blade plus
 plain JavaScript posting to the same `/api/orders` endpoint — nothing here needed a framework.
+
+## 8. Editing and voiding a bill
+
+Asked for edit and delete on a bill. The first shape that came back deleted the order row outright.
+Changed it: a tax invoice that has been handed to a customer is not a row to delete, so "delete"
+became a **void** — stock returned, bill soft deleted with a reason, still readable under a filter.
+
+The edit was reworked too. The first version deleted the old lines and took stock for the new ones,
+which double-counts anything that appears in both. It now computes **one delta per product** across
+the union of the old and new line sets and applies it inside the same locked transaction as a sale.
+
+## 9. Extra screens
+
+Asked for the screens a counter actually needs beyond the wireframe: a dashboard, a customer list,
+and a per-product stock ledger. The ledger was the point of `stock_movements` all along — this is
+where the table stops being schema and starts being a feature.
+
+## 10. Comments
+
+Asked for the code to be stripped of comments and the reasoning moved into the README, next to the
+decision it explains. Docblocks were kept only where they carry types.
+
+## 11. Bugs the assistant introduced, and how they were caught
+
+Worth recording, since the brief asks how well the tooling was used rather than whether it was:
+
+- `InventoryService::restock()` first called `$model->increment()` and then computed
+  `balance_after` from the same model — Eloquent had already updated the attribute in memory, so
+  every restock recorded double the balance. Caught by a test asserting the exact ledger row.
+- The counter form lost its `novalidate` attribute during a rewrite, so the browser's own bubble
+  fired before the styled validation could. Caught while capturing the validation screenshot.
+- The dashboard chart rendered a percentage height inside a container with no height, so the bars
+  were invisible. Caught in a browser screenshot, not by any test.
+
+The general lesson: the tests catch logic, the browser catches everything else. Both were needed.

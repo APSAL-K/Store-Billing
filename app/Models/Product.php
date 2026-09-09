@@ -42,18 +42,11 @@ class Product extends Model
         return $this->hasMany(StockMovement::class);
     }
 
-    /**
-     * The point at which this product should be flagged as running low.
-     */
     public function effectiveLowStockThreshold(?int $override = null): int
     {
         return $override ?? $this->low_stock_threshold ?? config('inventory.low_stock_threshold');
     }
 
-    /**
-     * Products at or below the low-stock threshold. A threshold passed here wins
-     * over the per-product column, which in turn wins over the config default.
-     */
     public function scopeLowOnStock(Builder $query, ?int $threshold = null): Builder
     {
         if ($threshold !== null) {

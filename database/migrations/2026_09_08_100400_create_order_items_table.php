@@ -14,8 +14,6 @@ return new class extends Migration
             $table->foreignId('product_id')->constrained()->restrictOnDelete();
             $table->unsignedInteger('quantity');
 
-            // Priced at the moment of sale so historical orders are not rewritten
-            // when a product's price or tax rate changes later.
             $table->decimal('unit_price', 10, 2);
             $table->decimal('tax_percentage', 5, 2);
             $table->decimal('line_subtotal', 12, 2);
