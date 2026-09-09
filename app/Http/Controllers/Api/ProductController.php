@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\RestockProductRequest;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
+use App\Services\InventoryService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
@@ -23,13 +25,18 @@ class ProductController extends Controller
         return ProductResource::collection($products);
     }
 
-    /**
-     * Products at or below the low-stock threshold.
-     *
-     * The threshold resolves in this order: an explicit "threshold" parameter,
-     * then the product's own low_stock_threshold, then the application default
-     * in config/inventory.php.
-     */
+    public function restock(
+        RestockProductRequest $request,
+        Product $product,
+        InventoryService $inventory,
+    ): ProductResource {
+        return ProductResource::make($inventory->restock(
+            $product,
+            $request->integer('quantity'),
+            $request->input('note'),
+        ));
+    }
+
     public function lowStock(Request $request): AnonymousResourceCollection
     {
         $validated = $request->validate([

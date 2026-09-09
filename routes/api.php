@@ -12,3 +12,7 @@ Route::get('customers/lookup', [CustomerController::class, 'show'])->name('api.c
 
 Route::get('orders', [OrderController::class, 'index'])->name('api.orders.index');
 Route::post('orders', [OrderController::class, 'store'])->name('api.orders.store');
+Route::put('orders/{order}', [OrderController::class, 'update'])->withTrashed()->name('api.orders.update');
+Route::delete('orders/{order}', [OrderController::class, 'destroy'])->withTrashed()->name('api.orders.destroy');
+
+Route::post('products/{product}/restock', [ProductController::class, 'restock'])->name('api.products.restock');

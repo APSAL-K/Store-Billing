@@ -8,11 +8,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Order extends Model
 {
     /** @use HasFactory<OrderFactory> */
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $appends = [
         'reference',
@@ -26,6 +27,7 @@ class Order extends Model
         'amount_tendered',
         'change_due',
         'placed_at',
+        'void_reason',
     ];
 
     protected function casts(): array
@@ -37,18 +39,20 @@ class Order extends Model
             'amount_tendered' => 'decimal:2',
             'change_due' => 'decimal:2',
             'placed_at' => 'datetime',
+            'deleted_at' => 'datetime',
         ];
     }
 
-    /**
-     * Human-facing bill number. Derived from the primary key rather than stored,
-     * so there is no second source of truth to keep unique or in sync.
-     */
     protected function reference(): Attribute
     {
         return Attribute::get(fn (): ?string => $this->id === null
             ? null
             : sprintf('ORD-%s-%05d', $this->placed_at?->format('Ymd') ?? now()->format('Ymd'), $this->id));
+    }
+
+    public function isVoided(): bool
+    {
+        return $this->deleted_at !== null;
     }
 
     public function customer(): BelongsTo

@@ -9,10 +9,6 @@ use Illuminate\Http\Request;
 
 class CustomerController extends Controller
 {
-    /**
-     * Looks a customer up by email so the counter screen can fill in the name of
-     * a returning customer instead of asking for it again.
-     */
     public function show(Request $request): CustomerResource
     {
         $validated = $request->validate([
