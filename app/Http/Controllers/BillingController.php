@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Product;
 use Illuminate\Contracts\View\View;
@@ -17,13 +18,14 @@ class BillingController extends Controller
             'order' => null,
             'lowStock' => $this->lowStock($products),
             'catalogue' => $this->catalogue($products),
+            'customers' => $this->customers(),
             'existingLines' => collect(),
         ]);
     }
 
     public function edit(Order $order): View
     {
-        abort_if($order->isVoided(), 404);
+        abort_if($order->trashed(), 404);
 
         $products = Product::orderBy('name')->get();
         $order->load(['customer', 'items.product']);
@@ -32,11 +34,29 @@ class BillingController extends Controller
             'order' => $order,
             'lowStock' => $this->lowStock($products),
             'catalogue' => $this->catalogue($products, $order),
+            'customers' => $this->customers(),
             'existingLines' => $order->items->map(fn ($item): array => [
                 'product_id' => $item->product_id,
                 'quantity' => $item->quantity,
             ])->values(),
         ]);
+    }
+
+    /**
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function customers(): Collection
+    {
+        return Customer::withCount('orders')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Customer $customer): array => [
+                'id' => $customer->id,
+                'name' => $customer->name,
+                'email' => $customer->email,
+                'orders_count' => $customer->orders_count,
+            ])
+            ->values();
     }
 
     /**

@@ -4,20 +4,22 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export default (config) => ({
     catalogue: config.catalogue,
+    customers: config.customers,
     orderId: config.orderId ?? null,
     lines: [],
 
-    customer: { email: config.customer?.email ?? '', name: config.customer?.name ?? '' },
-    lookup: { state: config.customer ? 'known' : 'idle', ordersCount: config.customer?.ordersCount ?? 0 },
+    mode: 'existing',
+    customerId: config.customerId ?? null,
+    customerSearch: '',
+    customerOpen: false,
+    customerHighlighted: 0,
+    draft: { name: '', email: '' },
 
+    search: '',
     tendered: config.tendered ?? '',
     errors: {},
     shortages: [],
     submitting: false,
-
-    search: '',
-    open: false,
-    highlighted: 0,
 
     money: formatPaise,
 
@@ -37,59 +39,123 @@ export default (config) => ({
         return this.orderId !== null;
     },
 
-    get matches() {
-        const needle = this.search.trim().toLowerCase();
-        const chosen = new Set(this.lines.map((line) => line.product.id));
+    get selectedCustomer() {
+        return this.customers.find((customer) => customer.id === this.customerId) ?? null;
+    },
 
-        return this.catalogue
-            .filter((product) => !chosen.has(product.id))
-            .filter((product) =>
+    get customerMatches() {
+        const needle = this.customerSearch.trim().toLowerCase();
+
+        return this.customers
+            .filter((customer) =>
                 needle === '' ||
-                product.name.toLowerCase().includes(needle) ||
-                product.code.toLowerCase().includes(needle),
+                customer.name.toLowerCase().includes(needle) ||
+                customer.email.toLowerCase().includes(needle),
             )
             .slice(0, 8);
     },
 
-    openPicker() {
-        this.open = true;
-        this.highlighted = 0;
+    openCustomers() {
+        this.customerOpen = true;
+        this.customerHighlighted = 0;
     },
 
-    move(step) {
-        if (!this.open) {
-            this.openPicker();
+    moveCustomer(step) {
+        if (!this.customerOpen) {
+            this.openCustomers();
 
             return;
         }
 
-        const count = this.matches.length;
+        const count = this.customerMatches.length;
 
         if (count > 0) {
-            this.highlighted = (this.highlighted + step + count) % count;
+            this.customerHighlighted = (this.customerHighlighted + step + count) % count;
         }
     },
 
-    choose(product) {
-        if (!product || product.stock_on_hand < 1) {
+    pickCustomer(customer) {
+        if (!customer) {
+            return;
+        }
+
+        this.customerId = customer.id;
+        this.customerSearch = '';
+        this.customerOpen = false;
+        this.clearError('customer.email');
+    },
+
+    pickHighlightedCustomer() {
+        this.pickCustomer(this.customerMatches[this.customerHighlighted]);
+    },
+
+    clearCustomer() {
+        this.customerId = null;
+        this.customerSearch = '';
+        this.$nextTick(() => this.$refs.customerSearch?.focus());
+    },
+
+    startNewCustomer() {
+        this.mode = 'new';
+        this.customerId = null;
+        this.customerOpen = false;
+        this.draft = { name: this.customerSearch.trim(), email: '' };
+        this.customerSearch = '';
+        this.$nextTick(() => this.$refs.draftName?.focus());
+    },
+
+    cancelNewCustomer() {
+        this.mode = 'existing';
+        this.draft = { name: '', email: '' };
+        this.clearError('customer.name');
+        this.clearError('customer.email');
+    },
+
+    get visibleProducts() {
+        const needle = this.search.trim().toLowerCase();
+
+        return this.catalogue.filter((product) =>
+            needle === '' ||
+            product.name.toLowerCase().includes(needle) ||
+            product.code.toLowerCase().includes(needle),
+        );
+    },
+
+    lineFor(product) {
+        return this.lines.find((line) => line.product.id === product.id) ?? null;
+    },
+
+    quantityOf(product) {
+        return this.lineFor(product)?.quantity ?? 0;
+    },
+
+    add(product) {
+        if (product.stock_on_hand < 1) {
+            return;
+        }
+
+        const line = this.lineFor(product);
+
+        if (line) {
+            this.setQuantity(line, line.quantity + 1);
+
             return;
         }
 
         this.lines.push({ product, quantity: 1 });
-        this.search = '';
-        this.open = false;
-        this.highlighted = 0;
-        delete this.errors.items;
-
-        this.$nextTick(() => this.$refs.search?.focus());
-    },
-
-    chooseHighlighted() {
-        this.choose(this.matches[this.highlighted]);
+        this.clearError('items');
     },
 
     remove(index) {
         this.lines.splice(index, 1);
+    },
+
+    removeProduct(product) {
+        const index = this.lines.findIndex((line) => line.product.id === product.id);
+
+        if (index > -1) {
+            this.lines.splice(index, 1);
+        }
     },
 
     setQuantity(line, value) {
@@ -98,6 +164,10 @@ export default (config) => ({
         line.quantity = Number.isFinite(quantity) && quantity > 0
             ? Math.min(quantity, line.product.stock_on_hand)
             : 1;
+    },
+
+    shortageFor(productId) {
+        return this.shortages.find((shortage) => shortage.product_id === productId) ?? null;
     },
 
     get subtotal() {
@@ -136,49 +206,42 @@ export default (config) => ({
         return priceLine(line.product, line.quantity).total;
     },
 
-    async lookupCustomer() {
-        const email = this.customer.email.trim().toLowerCase();
+    get suggestedTenders() {
+        const due = Math.ceil(this.grandTotal / 100);
 
-        if (!EMAIL_PATTERN.test(email)) {
-            this.lookup = { state: 'idle', ordersCount: 0 };
-
-            return;
+        if (due === 0) {
+            return [];
         }
 
-        this.lookup = { state: 'searching', ordersCount: 0 };
+        const options = new Set([due]);
 
-        try {
-            const response = await fetch(`/api/customers/lookup?email=${encodeURIComponent(email)}`, {
-                headers: { Accept: 'application/json' },
-            });
+        [10, 50, 100, 500].forEach((step) => options.add(Math.ceil(due / step) * step));
 
-            if (!response.ok) {
-                this.lookup = { state: 'new', ordersCount: 0 };
+        return [...options].sort((a, b) => a - b).slice(0, 4);
+    },
 
-                return;
-            }
-
-            const { data } = await response.json();
-
-            this.customer.name = data.name;
-            this.lookup = { state: 'known', ordersCount: data.orders_count ?? 0 };
-            delete this.errors['customer.name'];
-        } catch {
-            this.lookup = { state: 'idle', ordersCount: 0 };
-        }
+    quickTender(amount) {
+        this.tendered = String(amount);
+        this.clearError('amount_tendered');
     },
 
     validate() {
         const errors = {};
 
-        if (this.customer.email.trim() === '') {
-            errors['customer.email'] = 'An email is required.';
-        } else if (!EMAIL_PATTERN.test(this.customer.email.trim())) {
-            errors['customer.email'] = 'That does not look like an email address.';
-        }
+        if (this.mode === 'existing') {
+            if (this.customerId === null) {
+                errors['customer.email'] = 'Choose a customer, or add a new one.';
+            }
+        } else {
+            if (this.draft.name.trim() === '') {
+                errors['customer.name'] = 'A name is required.';
+            }
 
-        if (this.lookup.state !== 'known' && this.customer.name.trim() === '') {
-            errors['customer.name'] = 'A name is required the first time we see this email.';
+            if (this.draft.email.trim() === '') {
+                errors['customer.email'] = 'An email is required.';
+            } else if (!EMAIL_PATTERN.test(this.draft.email.trim())) {
+                errors['customer.email'] = 'That does not look like an email address.';
+            }
         }
 
         if (this.lines.length === 0) {
@@ -200,8 +263,10 @@ export default (config) => ({
 
     reset() {
         this.lines = [];
-        this.customer = { email: '', name: '' };
-        this.lookup = { state: 'idle', ordersCount: 0 };
+        this.mode = 'existing';
+        this.customerId = null;
+        this.customerSearch = '';
+        this.draft = { name: '', email: '' };
         this.tendered = '';
         this.errors = {};
         this.shortages = [];
@@ -219,6 +284,10 @@ export default (config) => ({
 
         this.submitting = true;
 
+        const customer = this.mode === 'existing'
+            ? { email: this.selectedCustomer.email, name: null }
+            : { email: this.draft.email.trim(), name: this.draft.name.trim() };
+
         try {
             const response = await fetch(this.isEditing ? `/api/orders/${this.orderId}` : '/api/orders', {
                 method: this.isEditing ? 'PUT' : 'POST',
@@ -228,10 +297,7 @@ export default (config) => ({
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                 },
                 body: JSON.stringify({
-                    customer: {
-                        email: this.customer.email.trim(),
-                        name: this.customer.name.trim() || null,
-                    },
+                    customer,
                     items: this.lines.map((line) => ({
                         product_id: line.product.id,
                         quantity: line.quantity,

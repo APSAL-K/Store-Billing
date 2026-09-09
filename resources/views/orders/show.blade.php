@@ -7,7 +7,7 @@
         ? []
         : \App\Support\CashDrawer::breakdown(\App\Support\Money::toMinor($order->change_due)))
 
-    <div class="mx-auto max-w-3xl" x-data="voidOrder({{ $order->id }})">
+    <div class="mx-auto max-w-3xl" x-data="deleteOrder">
 
         @if ($order->trashed())
             <div class="no-print mb-5 flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4">
@@ -16,10 +16,10 @@
                          stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
                 </span>
                 <div>
-                    <p class="text-sm font-semibold text-rose-900">This bill was voided</p>
+                    <p class="text-sm font-semibold text-rose-900">This bill was deleted</p>
                     <p class="mt-0.5 text-sm text-rose-700">
-                        {{ $order->void_reason ?: 'No reason was recorded.' }}
-                        Stock was returned to the shelf on {{ $order->deleted_at->format('d M Y, g:i A') }}.
+                        Its stock went back on the shelf on {{ $order->deleted_at->format('d M Y, g:i A') }}.
+                        The record is kept so the ledger still adds up.
                     </p>
                 </div>
             </div>
@@ -69,8 +69,10 @@
                 <button type="button" onclick="window.print()" class="btn-ghost">Print</button>
                 @unless ($order->trashed())
                     <a href="{{ route('billing.edit', $order) }}" class="btn-ghost">Edit</a>
-                    <button type="button" class="btn-ghost text-rose-700 hover:bg-rose-50" @click="open = true">
-                        Void bill
+                    @php($deleteTarget = ['id' => $order->id, 'reference' => $order->reference, 'units' => $order->items->sum('quantity'), 'redirect' => route('orders.index')])
+                    <button type="button" class="btn-ghost text-rose-700 hover:bg-rose-50"
+                            @click="confirm(@js($deleteTarget))">
+                        Delete bill
                     </button>
                 @endunless
                 <a href="{{ route('billing.index') }}" class="btn-primary">New order</a>
@@ -172,32 +174,19 @@
             </p>
         </article>
 
-        <div x-show="open" x-cloak x-transition.opacity @keydown.escape.window="open = false"
-             class="no-print fixed inset-0 z-40 flex items-center justify-center bg-ink-950/50 p-4"
-             role="dialog" aria-modal="true">
-            <div @click.outside="open = false" class="w-full max-w-md rounded-xl bg-white p-5 shadow-xl">
-                <h2 class="text-sm font-semibold text-slate-900">Void {{ $order->reference }}?</h2>
-                <p class="mt-1 text-sm text-slate-500">
-                    The {{ $order->items->sum('quantity') }} units on this bill go back on the shelf and the bill
-                    stops counting towards revenue. It stays readable under the voided filter.
-                </p>
+        <x-modal title="Delete this bill?" width="max-w-sm">
+            <p class="mt-1 text-sm text-slate-500">
+                <span class="font-mono font-semibold text-slate-700">{{ $order->reference }}</span> is removed
+                from the till and its {{ $order->items->sum('quantity') }} units go back on the shelf. The
+                record is kept and stays readable under the deleted filter.
+            </p>
 
-                <div class="mt-4">
-                    <x-field label="Reason" for="void-reason" hint="optional">
-                        <input id="void-reason" type="text" x-model="reason" maxlength="255"
-                               placeholder="Customer changed their mind, wrong items scanned…"
-                               class="field-input" @keydown.enter.prevent="confirm()">
-                    </x-field>
-                </div>
-
-                <div class="mt-5 flex justify-end gap-2">
-                    <button type="button" class="btn-ghost" @click="open = false">Keep the bill</button>
-                    <button type="button" class="btn bg-rose-600 text-white shadow-sm hover:bg-rose-700"
-                            :disabled="working" @click="confirm()">
-                        <span x-text="working ? 'Voiding…' : 'Void bill'"></span>
-                    </button>
-                </div>
+            <div class="mt-5 flex justify-end gap-2">
+                <button type="button" class="btn-ghost" @click="open = false">Keep the bill</button>
+                <button type="button" class="btn-danger" :disabled="working" @click="run()">
+                    <span x-text="working ? 'Deleting…' : 'Delete bill'"></span>
+                </button>
             </div>
-        </div>
+        </x-modal>
     </div>
 @endsection

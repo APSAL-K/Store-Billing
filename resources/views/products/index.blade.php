@@ -55,7 +55,7 @@
             </x-empty-state>
         @else
             <div class="overflow-x-auto">
-                <table class="w-full min-w-[44rem] text-sm">
+                <table class="w-full min-w-[48rem] text-sm">
                     <thead class="border-b border-slate-200 bg-slate-50 text-left text-xs tracking-wide text-slate-500 uppercase">
                         <tr>
                             <th class="px-5 py-3 font-semibold">Product</th>
@@ -63,7 +63,8 @@
                             <th class="w-28 px-3 py-3 text-right font-semibold">Price</th>
                             <th class="w-20 px-3 py-3 text-right font-semibold">Tax</th>
                             <th class="w-28 px-3 py-3 text-right font-semibold">Threshold</th>
-                            <th class="w-36 px-5 py-3 text-right font-semibold">Stock</th>
+                            <th class="w-32 px-3 py-3 text-right font-semibold">Stock</th>
+                            <th class="w-20 px-5 py-3 text-right font-semibold"></th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -79,7 +80,10 @@
                                         <span class="ml-0.5 text-xs text-slate-300" title="Falls back to the application default">def</span>
                                     @endunless
                                 </td>
-                                <td class="px-5 py-3 text-right"><x-stock-badge :product="$product" /></td>
+                                <td class="px-3 py-3 text-right"><x-stock-badge :product="$product" /></td>
+                                <td class="px-5 py-3 text-right">
+                                    <a href="{{ route('products.show', $product) }}" class="btn-row">View</a>
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>

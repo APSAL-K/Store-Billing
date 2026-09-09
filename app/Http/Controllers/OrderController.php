@@ -13,7 +13,7 @@ class OrderController extends Controller
         $email = $request->string('email')->lower()->trim()->value();
 
         $orders = Order::query()
-            ->when($request->boolean('voided'), fn ($query) => $query->onlyTrashed())
+            ->when($request->boolean('deleted'), fn ($query) => $query->onlyTrashed())
             ->with(['customer', 'items'])
             ->withSum('items', 'quantity')
             ->when($email !== '', fn ($query) => $query->whereHas(
@@ -28,8 +28,8 @@ class OrderController extends Controller
         return view('orders.index', [
             'orders' => $orders,
             'email' => $email,
-            'showingVoided' => $request->boolean('voided'),
-            'voidedCount' => Order::onlyTrashed()->count(),
+            'showingDeleted' => $request->boolean('deleted'),
+            'deletedCount' => Order::onlyTrashed()->count(),
         ]);
     }
 

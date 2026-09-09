@@ -68,6 +68,7 @@
     .btn,
     .btn-primary,
     .btn-success,
+    .btn-danger,
     .btn-ghost {
         @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm
                font-semibold transition select-none focus-visible:outline-2
@@ -89,6 +90,27 @@
                hover:text-slate-900 focus-visible:outline-slate-400;
     }
 
+    .btn-danger {
+        @apply bg-rose-600 text-white shadow-sm hover:bg-rose-700 active:bg-rose-800
+               focus-visible:outline-rose-600;
+    }
+
+    .btn-row {
+        @apply inline-flex items-center justify-center rounded-md border border-slate-200 bg-white px-2.5
+               py-1 text-xs font-semibold text-slate-600 shadow-xs transition
+               hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900
+               focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400;
+    }
+
+    .btn-row-primary {
+        @apply border-brand-200 bg-brand-50 text-brand-700 hover:border-brand-300 hover:bg-brand-100
+               hover:text-brand-800;
+    }
+
+    .btn-row-danger {
+        @apply text-rose-600 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700;
+    }
+
     .card {
         @apply rounded-xl border border-slate-200 bg-white shadow-xs;
     }
@@ -106,6 +128,27 @@
 
     body {
         background: #fff;
+    }
+
+    .btn-danger {
+        @apply bg-rose-600 text-white shadow-sm hover:bg-rose-700 active:bg-rose-800
+               focus-visible:outline-rose-600;
+    }
+
+    .btn-row {
+        @apply inline-flex items-center justify-center rounded-md border border-slate-200 bg-white px-2.5
+               py-1 text-xs font-semibold text-slate-600 shadow-xs transition
+               hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900
+               focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400;
+    }
+
+    .btn-row-primary {
+        @apply border-brand-200 bg-brand-50 text-brand-700 hover:border-brand-300 hover:bg-brand-100
+               hover:text-brand-800;
+    }
+
+    .btn-row-danger {
+        @apply text-rose-600 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700;
     }
 
     .card {

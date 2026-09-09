@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Data\NewOrderData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreOrderRequest;
-use App\Http\Requests\VoidOrderRequest;
 use App\Http\Resources\OrderResource;
 use App\Models\Customer;
 use App\Models\Order;
@@ -34,9 +33,9 @@ class OrderController extends Controller
         );
     }
 
-    public function destroy(VoidOrderRequest $request, Order $order): JsonResponse
+    public function destroy(Order $order): JsonResponse
     {
-        $this->orders->void($order, $request->input('reason'));
+        $this->orders->delete($order);
 
         return response()->json(null, 204);
     }
@@ -46,13 +45,13 @@ class OrderController extends Controller
         $validated = $request->validate([
             'email' => ['required', 'email:rfc', 'max:255'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
-            'include_voided' => ['nullable', 'boolean'],
+            'include_deleted' => ['nullable', 'boolean'],
         ]);
 
         $customer = Customer::where('email', strtolower(trim($validated['email'])))->firstOrFail();
 
         $orders = Order::where('customer_id', $customer->id)
-            ->when($request->boolean('include_voided'), fn ($query) => $query->withTrashed())
+            ->when($request->boolean('include_deleted'), fn ($query) => $query->withTrashed())
             ->with(['customer', 'items.product'])
             ->latest('placed_at')
             ->latest('id')

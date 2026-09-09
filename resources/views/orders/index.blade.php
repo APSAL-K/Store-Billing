@@ -3,6 +3,7 @@
 @section('title', 'Orders')
 
 @section('content')
+<div x-data="deleteOrder">
     <x-page-header title="Orders" description="Every bill raised at the counter, most recent first.">
         <x-slot:actions>
             <a href="{{ route('billing.index') }}" class="btn-primary">New order</a>
@@ -24,17 +25,17 @@
         </x-field>
 
         <label class="flex cursor-pointer items-center gap-2 pb-2.5 text-sm text-slate-600">
-            <input type="checkbox" name="voided" value="1" @checked($showingVoided)
+            <input type="checkbox" name="deleted" value="1" @checked($showingDeleted)
                    class="size-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500/30">
-            Voided only
-            @if ($voidedCount > 0)
-                <span class="badge bg-rose-50 text-rose-700 ring-1 ring-rose-200">{{ $voidedCount }}</span>
+            Deleted only
+            @if ($deletedCount > 0)
+                <span class="badge bg-rose-50 text-rose-700 ring-1 ring-rose-200">{{ $deletedCount }}</span>
             @endif
         </label>
 
         <button type="submit" class="btn-primary">Search</button>
 
-        @if ($email !== '' || $showingVoided)
+        @if ($email !== '' || $showingDeleted)
             <a href="{{ route('orders.index') }}" class="btn-ghost">Clear</a>
         @endif
     </form>
@@ -67,7 +68,7 @@
                             <th class="w-32 px-3 py-3 text-right font-semibold">Tax</th>
                             <th class="w-36 px-3 py-3 text-right font-semibold">Total</th>
                             <th class="w-40 px-3 py-3 text-right font-semibold">Placed</th>
-                            <th class="w-28 px-5 py-3 text-right font-semibold">Actions</th>
+                            <th class="w-52 px-5 py-3 text-right font-semibold">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -79,7 +80,7 @@
                                         {{ $order->reference }}
                                     </a>
                                     @if ($order->trashed())
-                                        <span class="badge ml-1.5 bg-rose-50 text-rose-700 ring-1 ring-rose-200">Voided</span>
+                                        <span class="badge ml-1.5 bg-rose-50 text-rose-700 ring-1 ring-rose-200">Deleted</span>
                                     @endif
                                 </td>
                                 <td class="px-3 py-3 whitespace-nowrap">
@@ -93,13 +94,18 @@
                                     <span class="block text-slate-600">{{ $order->placed_at->format('d M Y') }}</span>
                                     <span class="tnum block text-xs text-slate-400">{{ $order->placed_at->format('g:i A') }}</span>
                                 </td>
-                                <td class="px-5 py-3 text-right whitespace-nowrap">
-                                    <a href="{{ route('orders.show', $order) }}"
-                                       class="text-xs font-medium text-slate-500 hover:text-slate-900">View</a>
-                                    @unless ($order->trashed())
-                                        <a href="{{ route('billing.edit', $order) }}"
-                                           class="ml-2 text-xs font-medium text-brand-700 hover:underline">Edit</a>
-                                    @endunless
+                                <td class="px-5 py-3">
+                                    <div class="flex items-center justify-end gap-1">
+                                        <a href="{{ route('orders.show', $order) }}" class="btn-row">View</a>
+                                        @unless ($order->trashed())
+                                            <a href="{{ route('billing.edit', $order) }}" class="btn-row">Edit</a>
+                                            @php($deleteTarget = ['id' => $order->id, 'reference' => $order->reference, 'units' => $order->items_sum_quantity])
+                                            <button type="button" class="btn-row btn-row-danger"
+                                                    @click="confirm(@js($deleteTarget))">
+                                                Delete
+                                            </button>
+                                        @endunless
+                                    </div>
                                 </td>
                             </tr>
                         @endforeach
@@ -107,11 +113,23 @@
                 </table>
             </div>
 
-            @if ($orders->hasPages())
-                <div class="border-t border-slate-200 px-5 py-3">
-                    {{ $orders->links() }}
-                </div>
-            @endif
+            <x-pagination :paginator="$orders" label="bills" />
         @endif
     </div>
+
+    <x-modal title="Delete this bill?" width="max-w-sm">
+        <p class="mt-1 text-sm text-slate-500">
+            <span class="font-mono font-semibold text-slate-700" x-text="target?.reference"></span> is removed
+            from the till and its <span class="tnum font-medium" x-text="target?.units"></span> units go back on
+            the shelf. The record is kept and stays readable under the deleted filter.
+        </p>
+
+        <div class="mt-5 flex justify-end gap-2">
+            <button type="button" class="btn-ghost" @click="open = false">Keep the bill</button>
+            <button type="button" class="btn-danger" :disabled="working" @click="run()">
+                <span x-text="working ? 'Deleting…' : 'Delete bill'"></span>
+            </button>
+        </div>
+    </x-modal>
+</div>
 @endsection

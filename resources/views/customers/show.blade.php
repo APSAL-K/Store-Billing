@@ -42,7 +42,7 @@
                                         {{ $order->reference }}
                                     </a>
                                     @if ($order->trashed())
-                                        <span class="badge ml-1.5 bg-rose-50 text-rose-700 ring-1 ring-rose-200">Voided</span>
+                                        <span class="badge ml-1.5 bg-rose-50 text-rose-700 ring-1 ring-rose-200">Deleted</span>
                                     @endif
                                 </td>
                                 <td class="tnum px-3 py-3 text-right text-slate-600">{{ $order->items_sum_quantity }}</td>
@@ -56,9 +56,7 @@
                 </table>
             </div>
 
-            @if ($orders->hasPages())
-                <div class="border-t border-slate-200 px-5 py-3">{{ $orders->links() }}</div>
-            @endif
+            <x-pagination :paginator="$orders" label="bills" />
         @endif
     </div>
 @endsection

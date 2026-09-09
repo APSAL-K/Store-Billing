@@ -72,44 +72,34 @@
                     </table>
                 </div>
 
-                @if ($movements->hasPages())
-                    <div class="border-t border-slate-200 px-5 py-3">{{ $movements->links() }}</div>
-                @endif
+                <x-pagination :paginator="$movements" label="movements" />
             @endif
         </div>
 
-        <div x-show="open" x-cloak x-transition.opacity @keydown.escape.window="open = false"
-             class="fixed inset-0 z-40 flex items-center justify-center bg-ink-950/50 p-4" role="dialog" aria-modal="true">
-            <div @click.outside="open = false" class="w-full max-w-sm rounded-xl bg-white p-5 shadow-xl">
-                <h2 class="text-sm font-semibold text-slate-900">Add stock</h2>
-                <p class="mt-1 text-sm text-slate-500">
-                    Records a restock movement against {{ $product->name }}.
-                </p>
+        <x-modal title="Add stock" description="Records a restock movement against {{ $product->name }}.">
+            <div class="mt-4 space-y-4">
+                <x-field label="Units" for="restock-quantity" :required="true">
+                    <input id="restock-quantity" type="number" min="1" step="1" x-model="quantity"
+                           placeholder="0" class="field-input tnum"
+                           :class="error && 'field-input-invalid'"
+                           @keydown.enter.prevent="confirm()">
+                    <template x-if="error">
+                        <p class="mt-1.5 text-xs text-rose-600" x-text="error"></p>
+                    </template>
+                </x-field>
 
-                <div class="mt-4 space-y-4">
-                    <x-field label="Units" for="restock-quantity" :required="true">
-                        <input id="restock-quantity" type="number" min="1" step="1" x-model="quantity"
-                               placeholder="0" class="field-input tnum"
-                               :class="error && 'field-input-invalid'"
-                               @keydown.enter.prevent="confirm()">
-                        <template x-if="error">
-                            <p class="mt-1.5 text-xs text-rose-600" x-text="error"></p>
-                        </template>
-                    </x-field>
-
-                    <x-field label="Note" for="restock-note" hint="optional">
-                        <input id="restock-note" type="text" x-model="note" maxlength="255"
-                               placeholder="Supplier invoice, delivery reference…" class="field-input">
-                    </x-field>
-                </div>
-
-                <div class="mt-5 flex justify-end gap-2">
-                    <button type="button" class="btn-ghost" @click="open = false">Cancel</button>
-                    <button type="button" class="btn-primary" :disabled="working" @click="confirm()">
-                        <span x-text="working ? 'Adding…' : 'Add stock'"></span>
-                    </button>
-                </div>
+                <x-field label="Note" for="restock-note" hint="optional">
+                    <input id="restock-note" type="text" x-model="note" maxlength="255"
+                           placeholder="Supplier invoice, delivery reference&hellip;" class="field-input">
+                </x-field>
             </div>
-        </div>
+
+            <div class="mt-5 flex justify-end gap-2">
+                <button type="button" class="btn-ghost" @click="open = false">Cancel</button>
+                <button type="button" class="btn-primary" :disabled="working" @click="confirm()">
+                    <span x-text="working ? 'Adding…' : 'Add stock'"></span>
+                </button>
+            </div>
+        </x-modal>
     </div>
 @endsection
