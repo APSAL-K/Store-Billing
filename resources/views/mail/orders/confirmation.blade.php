@@ -21,7 +21,7 @@ You paid ₹{{ number_format((float) $order->amount_tendered, 2) }} and received
 ₹{{ number_format((float) $order->change_due, 2) }} in change.
 @endif
 
-<x-mail::button :url="route('billing.receipt', $order)">
+<x-mail::button :url="route('orders.show', $order)">
 View this bill
 </x-mail::button>
 
