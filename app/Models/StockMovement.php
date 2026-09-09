@@ -4,16 +4,19 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class StockMovement extends Model
 {
+    use SoftDeletes;
+
     public const REASON_SALE = 'sale';
 
     public const REASON_RESTOCK = 'restock';
 
     public const REASON_OPENING_BALANCE = 'opening_balance';
 
-    public const REASON_VOID = 'void';
+    public const REASON_RETURN = 'return';
 
     public const REASON_ADJUSTMENT = 'adjustment';
 
@@ -21,7 +24,7 @@ class StockMovement extends Model
         self::REASON_SALE => 'Sale',
         self::REASON_RESTOCK => 'Restock',
         self::REASON_OPENING_BALANCE => 'Opening balance',
-        self::REASON_VOID => 'Bill voided',
+        self::REASON_RETURN => 'Bill deleted',
         self::REASON_ADJUSTMENT => 'Bill edited',
     ];
 
@@ -49,7 +52,7 @@ class StockMovement extends Model
 
     public function product(): BelongsTo
     {
-        return $this->belongsTo(Product::class);
+        return $this->belongsTo(Product::class)->withTrashed();
     }
 
     public function order(): BelongsTo

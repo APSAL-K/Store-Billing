@@ -33,7 +33,7 @@ class DashboardMetrics
     {
         return [
             'orders' => Order::count(),
-            'voided' => Order::onlyTrashed()->count(),
+            'deleted' => Order::onlyTrashed()->count(),
             'revenue' => (float) Order::sum('grand_total'),
             'customers' => Customer::count(),
         ];

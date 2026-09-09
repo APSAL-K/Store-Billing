@@ -64,8 +64,8 @@ class OrderService
      */
     public function update(Order $order, NewOrderData $data): Order
     {
-        if ($order->isVoided()) {
-            throw new OrderNotEditableException('A voided bill cannot be edited.');
+        if ($order->trashed()) {
+            throw new OrderNotEditableException('A deleted bill cannot be edited.');
         }
 
         DB::transaction(function () use ($order, $data): void {
@@ -92,7 +92,7 @@ class OrderService
 
             $this->applyStockDeltas($deltas, $products, $order, StockMovement::REASON_ADJUSTMENT);
 
-            $order->items()->delete();
+            $order->items()->forceDelete();
             $order->items()->createMany($priced->items);
 
             $order->update([
@@ -115,21 +115,18 @@ class OrderService
     /**
      * @throws OrderNotEditableException
      */
-    public function void(Order $order, ?string $reason = null): Order
+    public function delete(Order $order): Order
     {
-        if ($order->isVoided()) {
-            throw new OrderNotEditableException('This bill has already been voided.');
+        if ($order->trashed()) {
+            throw new OrderNotEditableException('This bill has already been deleted.');
         }
 
-        DB::transaction(function () use ($order, $reason): void {
+        DB::transaction(function () use ($order): void {
             $lines = $order->items()->pluck('quantity', 'product_id');
             $products = $this->lockProducts($lines->keys()->all());
 
-            $deltas = $lines->map(fn (int $quantity): int => $quantity)->all();
+            $this->applyStockDeltas($lines->all(), $products, $order, StockMovement::REASON_RETURN);
 
-            $this->applyStockDeltas($deltas, $products, $order, StockMovement::REASON_VOID, $reason);
-
-            $order->update(['void_reason' => $reason]);
             $order->delete();
         });
 

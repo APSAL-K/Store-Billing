@@ -27,7 +27,6 @@ class Order extends Model
         'amount_tendered',
         'change_due',
         'placed_at',
-        'void_reason',
     ];
 
     protected function casts(): array
@@ -50,14 +49,9 @@ class Order extends Model
             : sprintf('ORD-%s-%05d', $this->placed_at?->format('Ymd') ?? now()->format('Ymd'), $this->id));
     }
 
-    public function isVoided(): bool
-    {
-        return $this->deleted_at !== null;
-    }
-
     public function customer(): BelongsTo
     {
-        return $this->belongsTo(Customer::class);
+        return $this->belongsTo(Customer::class)->withTrashed();
     }
 
     public function items(): HasMany

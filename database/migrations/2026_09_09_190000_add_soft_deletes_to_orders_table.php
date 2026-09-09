@@ -9,7 +9,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('orders', function (Blueprint $table) {
-            $table->string('void_reason')->nullable()->after('placed_at');
             $table->softDeletes();
         });
     }
@@ -18,7 +17,6 @@ return new class extends Migration
     {
         Schema::table('orders', function (Blueprint $table) {
             $table->dropSoftDeletes();
-            $table->dropColumn('void_reason');
         });
     }
 };
