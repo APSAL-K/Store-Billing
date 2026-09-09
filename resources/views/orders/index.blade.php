@@ -49,7 +49,7 @@
             </x-empty-state>
         @else
             <div class="overflow-x-auto">
-                <table class="w-full text-sm">
+                <table class="w-full min-w-[46rem] text-sm">
                     <thead class="border-b border-slate-200 bg-slate-50 text-left text-xs tracking-wide text-slate-500 uppercase">
                         <tr>
                             <th class="px-5 py-3 font-semibold">Bill</th>
@@ -63,13 +63,13 @@
                     <tbody class="divide-y divide-slate-100">
                         @foreach ($orders as $order)
                             <tr class="transition hover:bg-slate-50">
-                                <td class="px-5 py-3">
+                                <td class="px-5 py-3 whitespace-nowrap">
                                     <a href="{{ route('orders.show', $order) }}"
                                        class="font-mono text-xs font-semibold text-brand-700 hover:underline">
                                         {{ $order->reference }}
                                     </a>
                                 </td>
-                                <td class="px-3 py-3">
+                                <td class="px-3 py-3 whitespace-nowrap">
                                     <span class="block text-slate-800">{{ $order->customer->name }}</span>
                                     <span class="block text-xs text-slate-400">{{ $order->customer->email }}</span>
                                 </td>

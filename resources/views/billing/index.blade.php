@@ -136,10 +136,11 @@
                         </div>
                     </template>
 
-                    <table class="w-full text-sm" x-show="lines.length > 0">
+                    <div class="overflow-x-auto" x-show="lines.length > 0">
+                    <table class="w-full min-w-[40rem] text-sm">
                         <thead class="border-b border-slate-200 text-left text-xs tracking-wide text-slate-500 uppercase">
                             <tr>
-                                <th class="px-5 py-2.5 font-semibold">Product</th>
+                                <th class="min-w-52 px-5 py-2.5 font-semibold">Product</th>
                                 <th class="w-28 px-3 py-2.5 font-semibold">Qty</th>
                                 <th class="w-28 px-3 py-2.5 text-right font-semibold">Rate</th>
                                 <th class="w-24 px-3 py-2.5 text-right font-semibold">Tax</th>
@@ -150,7 +151,7 @@
                         <tbody class="divide-y divide-slate-100">
                             <template x-for="(line, index) in lines" :key="line.product.id">
                                 <tr :class="shortages.some(s => s.product_id === line.product.id) && 'bg-rose-50'">
-                                    <td class="px-5 py-3">
+                                    <td class="min-w-52 px-5 py-3">
                                         <span class="block font-medium text-slate-800" x-text="line.product.name"></span>
                                         <span class="block font-mono text-xs text-slate-400" x-text="line.product.code"></span>
                                         <template x-if="shortages.find(s => s.product_id === line.product.id)">
@@ -189,6 +190,7 @@
                             </template>
                         </tbody>
                     </table>
+                    </div>
 
                     <template x-if="errors.items">
                         <p class="border-t border-rose-100 bg-rose-50 px-5 py-2.5 text-xs font-medium text-rose-700"

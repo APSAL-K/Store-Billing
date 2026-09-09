@@ -55,7 +55,7 @@
             </x-empty-state>
         @else
             <div class="overflow-x-auto">
-                <table class="w-full text-sm">
+                <table class="w-full min-w-[44rem] text-sm">
                     <thead class="border-b border-slate-200 bg-slate-50 text-left text-xs tracking-wide text-slate-500 uppercase">
                         <tr>
                             <th class="px-5 py-3 font-semibold">Product</th>
@@ -69,7 +69,7 @@
                     <tbody class="divide-y divide-slate-100">
                         @foreach ($products as $product)
                             <tr class="transition hover:bg-slate-50">
-                                <td class="px-5 py-3 font-medium text-slate-800">{{ $product->name }}</td>
+                                <td class="px-5 py-3 font-medium whitespace-nowrap text-slate-800">{{ $product->name }}</td>
                                 <td class="px-3 py-3 font-mono text-xs text-slate-400">{{ $product->code }}</td>
                                 <td class="tnum px-3 py-3 text-right text-slate-700">₹{{ number_format((float) $product->unit_price, 2) }}</td>
                                 <td class="tnum px-3 py-3 text-right text-slate-500">{{ rtrim(rtrim(number_format((float) $product->tax_percentage, 2), '0'), '.') }}%</td>
