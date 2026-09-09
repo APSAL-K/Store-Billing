@@ -8,15 +8,12 @@ use Illuminate\Http\Request;
 
 class OrderController extends Controller
 {
-    /**
-     * Browsable order history. The email filter mirrors the API endpoint; with
-     * no filter it shows the whole day's trade.
-     */
     public function index(Request $request): View
     {
         $email = $request->string('email')->lower()->trim()->value();
 
         $orders = Order::query()
+            ->when($request->boolean('voided'), fn ($query) => $query->onlyTrashed())
             ->with(['customer', 'items'])
             ->withSum('items', 'quantity')
             ->when($email !== '', fn ($query) => $query->whereHas(
@@ -31,6 +28,8 @@ class OrderController extends Controller
         return view('orders.index', [
             'orders' => $orders,
             'email' => $email,
+            'showingVoided' => $request->boolean('voided'),
+            'voidedCount' => Order::onlyTrashed()->count(),
         ]);
     }
 

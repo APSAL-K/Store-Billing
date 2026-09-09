@@ -23,9 +23,18 @@
             </div>
         </x-field>
 
+        <label class="flex cursor-pointer items-center gap-2 pb-2.5 text-sm text-slate-600">
+            <input type="checkbox" name="voided" value="1" @checked($showingVoided)
+                   class="size-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500/30">
+            Voided only
+            @if ($voidedCount > 0)
+                <span class="badge bg-rose-50 text-rose-700 ring-1 ring-rose-200">{{ $voidedCount }}</span>
+            @endif
+        </label>
+
         <button type="submit" class="btn-primary">Search</button>
 
-        @if ($email !== '')
+        @if ($email !== '' || $showingVoided)
             <a href="{{ route('orders.index') }}" class="btn-ghost">Clear</a>
         @endif
     </form>
@@ -57,17 +66,21 @@
                             <th class="w-24 px-3 py-3 text-right font-semibold">Items</th>
                             <th class="w-32 px-3 py-3 text-right font-semibold">Tax</th>
                             <th class="w-36 px-3 py-3 text-right font-semibold">Total</th>
-                            <th class="w-44 px-5 py-3 text-right font-semibold">Placed</th>
+                            <th class="w-40 px-3 py-3 text-right font-semibold">Placed</th>
+                            <th class="w-28 px-5 py-3 text-right font-semibold">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         @foreach ($orders as $order)
-                            <tr class="transition hover:bg-slate-50">
+                            <tr class="transition hover:bg-slate-50 {{ $order->trashed() ? 'opacity-55' : '' }}">
                                 <td class="px-5 py-3 whitespace-nowrap">
                                     <a href="{{ route('orders.show', $order) }}"
                                        class="font-mono text-xs font-semibold text-brand-700 hover:underline">
                                         {{ $order->reference }}
                                     </a>
+                                    @if ($order->trashed())
+                                        <span class="badge ml-1.5 bg-rose-50 text-rose-700 ring-1 ring-rose-200">Voided</span>
+                                    @endif
                                 </td>
                                 <td class="px-3 py-3 whitespace-nowrap">
                                     <span class="block text-slate-800">{{ $order->customer->name }}</span>
@@ -76,9 +89,17 @@
                                 <td class="tnum px-3 py-3 text-right text-slate-600">{{ $order->items_sum_quantity }}</td>
                                 <td class="tnum px-3 py-3 text-right text-slate-500">₹{{ number_format((float) $order->tax_total, 2) }}</td>
                                 <td class="tnum px-3 py-3 text-right font-semibold text-slate-900">₹{{ number_format((float) $order->grand_total, 2) }}</td>
-                                <td class="px-5 py-3 text-right">
+                                <td class="px-3 py-3 text-right">
                                     <span class="block text-slate-600">{{ $order->placed_at->format('d M Y') }}</span>
                                     <span class="tnum block text-xs text-slate-400">{{ $order->placed_at->format('g:i A') }}</span>
+                                </td>
+                                <td class="px-5 py-3 text-right whitespace-nowrap">
+                                    <a href="{{ route('orders.show', $order) }}"
+                                       class="text-xs font-medium text-slate-500 hover:text-slate-900">View</a>
+                                    @unless ($order->trashed())
+                                        <a href="{{ route('billing.edit', $order) }}"
+                                           class="ml-2 text-xs font-medium text-brand-700 hover:underline">Edit</a>
+                                    @endunless
                                 </td>
                             </tr>
                         @endforeach

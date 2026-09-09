@@ -8,6 +8,18 @@ use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
+    public function show(Product $product): View
+    {
+        return view('products.show', [
+            'product' => $product,
+            'movements' => $product->stockMovements()
+                ->with('order')
+                ->latest('id')
+                ->paginate(20),
+            'sold' => (int) $product->orderItems()->whereHas('order')->sum('quantity'),
+        ]);
+    }
+
     public function index(Request $request): View
     {
         $search = $request->string('search')->trim()->value();

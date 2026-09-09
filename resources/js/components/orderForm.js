@@ -2,26 +2,40 @@ import { changeBreakdown, formatPaise, priceLine, toPaise } from '../money';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-export default (catalogue) => ({
-    catalogue,
+export default (config) => ({
+    catalogue: config.catalogue,
+    orderId: config.orderId ?? null,
     lines: [],
 
-    customer: { email: '', name: '' },
-    lookup: { state: 'idle', ordersCount: 0 },
+    customer: { email: config.customer?.email ?? '', name: config.customer?.name ?? '' },
+    lookup: { state: config.customer ? 'known' : 'idle', ordersCount: config.customer?.ordersCount ?? 0 },
 
-    tendered: '',
+    tendered: config.tendered ?? '',
     errors: {},
     shortages: [],
     submitting: false,
 
-    // Product combobox
     search: '',
     open: false,
     highlighted: 0,
 
     money: formatPaise,
 
-    // -- Catalogue ----------------------------------------------------------
+    init() {
+        const byId = new Map(this.catalogue.map((product) => [product.id, product]));
+
+        (config.lines ?? []).forEach((line) => {
+            const product = byId.get(line.product_id);
+
+            if (product) {
+                this.lines.push({ product, quantity: line.quantity });
+            }
+        });
+    },
+
+    get isEditing() {
+        return this.orderId !== null;
+    },
 
     get matches() {
         const needle = this.search.trim().toLowerCase();
@@ -78,11 +92,6 @@ export default (catalogue) => ({
         this.lines.splice(index, 1);
     },
 
-    /**
-     * Quantity is clamped to what is on the shelf. The server checks again under
-     * a row lock, but there is no reason to let the cashier type an order that
-     * is already known to fail.
-     */
     setQuantity(line, value) {
         const quantity = Math.trunc(Number(value));
 
@@ -90,8 +99,6 @@ export default (catalogue) => ({
             ? Math.min(quantity, line.product.stock_on_hand)
             : 1;
     },
-
-    // -- Totals -------------------------------------------------------------
 
     get subtotal() {
         return this.lines.reduce((sum, line) => sum + priceLine(line.product, line.quantity).subtotal, 0);
@@ -129,12 +136,6 @@ export default (catalogue) => ({
         return priceLine(line.product, line.quantity).total;
     },
 
-    // -- Customer -----------------------------------------------------------
-
-    /**
-     * Looks the email up as soon as it is a plausible address so a returning
-     * customer does not have to type their name again.
-     */
     async lookupCustomer() {
         const email = this.customer.email.trim().toLowerCase();
 
@@ -163,13 +164,9 @@ export default (catalogue) => ({
             this.lookup = { state: 'known', ordersCount: data.orders_count ?? 0 };
             delete this.errors['customer.name'];
         } catch {
-            // A failed lookup is not worth interrupting the sale for; the server
-            // will ask for a name if it turns out to need one.
             this.lookup = { state: 'idle', ordersCount: 0 };
         }
     },
-
-    // -- Validation ---------------------------------------------------------
 
     validate() {
         const errors = {};
@@ -211,8 +208,6 @@ export default (catalogue) => ({
         this.search = '';
     },
 
-    // -- Submit -------------------------------------------------------------
-
     async submit() {
         this.shortages = [];
 
@@ -225,8 +220,8 @@ export default (catalogue) => ({
         this.submitting = true;
 
         try {
-            const response = await fetch('/api/orders', {
-                method: 'POST',
+            const response = await fetch(this.isEditing ? `/api/orders/${this.orderId}` : '/api/orders', {
+                method: this.isEditing ? 'PUT' : 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
@@ -248,7 +243,7 @@ export default (catalogue) => ({
             const payload = await response.json();
 
             if (response.ok) {
-                window.location.href = `/orders/${payload.data.id}?placed=1`;
+                window.location.href = `/orders/${payload.data.id}?${this.isEditing ? 'updated' : 'placed'}=1`;
 
                 return;
             }
@@ -272,8 +267,6 @@ export default (catalogue) => ({
             return;
         }
 
-        // Laravel reports nested item errors as items.0.quantity; the row itself
-        // is what the cashier needs to see highlighted.
         this.errors = Object.fromEntries(
             Object.entries(payload.errors ?? {}).map(([field, messages]) => [
                 field.startsWith('items.') ? 'items' : field,

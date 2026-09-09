@@ -1,23 +1,43 @@
 @extends('layouts.app')
 
-@section('title', 'New Order')
+@section('title', $order ? 'Edit ' . $order->reference : 'New Order')
 
 @section('content')
-    <div x-data="orderForm(@js($catalogue))" x-cloak @keydown.escape="open = false">
+    @php
+        $config = [
+            'catalogue' => $catalogue,
+            'orderId' => $order?->id,
+            'lines' => $existingLines,
+            'tendered' => $order?->amount_tendered !== null ? (float) $order->amount_tendered : '',
+            'customer' => $order ? [
+                'email' => $order->customer->email,
+                'name' => $order->customer->name,
+                'ordersCount' => $order->customer->orders()->count(),
+            ] : null,
+        ];
+    @endphp
 
-        <x-page-header title="New Order" description="Scan or search the catalogue, take payment, and the bill is saved.">
+    <div x-data="orderForm(@js($config))" x-cloak @keydown.escape="open = false">
+
+        <x-page-header
+            :title="$order ? 'Edit bill ' . $order->reference : 'New Order'"
+            :description="$order
+                ? 'Changing the lines returns the difference to stock and reprices the bill.'
+                : 'Scan or search the catalogue, take payment, and the bill is saved.'">
             <x-slot:actions>
-                <button type="button" class="btn-ghost" @click="reset()" x-show="lines.length > 0">Clear bill</button>
-                <a href="{{ route('orders.index') }}" class="btn-ghost">Recent orders</a>
+                @if ($order)
+                    <a href="{{ route('orders.show', $order) }}" class="btn-ghost">Cancel</a>
+                @else
+                    <button type="button" class="btn-ghost" @click="reset()" x-show="lines.length > 0">Clear bill</button>
+                    <a href="{{ route('orders.index') }}" class="btn-ghost">Recent orders</a>
+                @endif
             </x-slot:actions>
         </x-page-header>
 
-        <form @submit.prevent="submit()" class="grid grid-cols-1 items-start gap-6 xl:grid-cols-3">
+        <form @submit.prevent="submit()" novalidate class="grid grid-cols-1 items-start gap-6 xl:grid-cols-3">
 
-            {{-- ------------------------------------------------ left column --}}
             <div class="space-y-6 xl:col-span-2">
 
-                {{-- Customer --}}
                 <section class="card p-5">
                     <div class="mb-4 flex items-center justify-between">
                         <h2 class="text-sm font-semibold text-slate-900">Customer</h2>
@@ -61,7 +81,6 @@
                     </div>
                 </section>
 
-                {{-- Products --}}
                 <section class="card overflow-hidden">
                     <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
                         <h2 class="text-sm font-semibold text-slate-900">Items</h2>
@@ -72,7 +91,6 @@
                         </p>
                     </div>
 
-                    {{-- Searchable product picker --}}
                     <div class="border-b border-slate-200 bg-slate-50/70 p-4" @click.outside="open = false">
                         <div class="relative">
                             <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">
@@ -128,7 +146,6 @@
                         </p>
                     </div>
 
-                    {{-- Lines --}}
                     <template x-if="lines.length === 0">
                         <div class="px-6 py-14 text-center">
                             <p class="text-sm font-semibold text-slate-600">No items on this bill yet</p>
@@ -199,10 +216,8 @@
                 </section>
             </div>
 
-            {{-- ----------------------------------------------- right column --}}
             <div class="space-y-6 xl:sticky xl:top-24">
 
-                {{-- Payment --}}
                 <section class="card p-5">
                     <h2 class="mb-4 text-sm font-semibold text-slate-900">Payment</h2>
 
@@ -258,15 +273,17 @@
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"/>
                         </svg>
-                        <span x-text="submitting ? 'Saving bill…' : 'Generate Bill'"></span>
+                        <span x-text="submitting
+                            ? (isEditing ? 'Saving changes…' : 'Saving bill…')
+                            : (isEditing ? 'Save changes' : 'Generate Bill')"></span>
                     </button>
 
                     <p class="mt-2.5 text-center text-xs text-slate-400">
-                        Deducts stock and queues the confirmation email.
+                        <span x-show="!isEditing">Deducts stock and queues the confirmation email.</span>
+                        <span x-show="isEditing">Reconciles stock against the previous lines.</span>
                     </p>
                 </section>
 
-                {{-- Low stock --}}
                 <section class="card overflow-hidden">
                     <div class="flex items-center gap-2 border-b border-amber-200 bg-amber-50 px-4 py-3">
                         <svg class="size-4 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor"

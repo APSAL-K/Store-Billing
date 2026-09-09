@@ -1,7 +1,9 @@
 @php
     $tabs = [
-        ['route' => 'billing.index', 'label' => 'New Order', 'active' => request()->routeIs('billing.index')],
+        ['route' => 'dashboard', 'label' => 'Dashboard', 'active' => request()->routeIs('dashboard')],
+        ['route' => 'billing.index', 'label' => 'New Order', 'active' => request()->routeIs('billing.*')],
         ['route' => 'orders.index', 'label' => 'Orders', 'active' => request()->routeIs('orders.*')],
+        ['route' => 'customers.index', 'label' => 'Customers', 'active' => request()->routeIs('customers.*')],
         ['route' => 'products.index', 'label' => 'Inventory', 'active' => request()->routeIs('products.*')],
     ];
 @endphp
@@ -24,7 +26,7 @@
 
     <header class="no-print sticky top-0 z-30 bg-ink-950 text-slate-300">
         <div class="mx-auto flex max-w-7xl items-center gap-6 px-4 sm:px-6">
-            <a href="{{ route('billing.index') }}" class="flex shrink-0 items-center gap-2.5 py-3.5">
+            <a href="{{ route('dashboard') }}" class="flex shrink-0 items-center gap-2.5 py-3.5">
                 <span class="flex size-8 items-center justify-center rounded-lg bg-brand-600 text-white">
                     <svg class="size-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -39,7 +41,7 @@
                 @foreach ($tabs as $tab)
                     <a href="{{ route($tab['route']) }}"
                        @if ($tab['active']) aria-current="page" @endif
-                       class="relative border-b-2 px-3 py-4 text-sm font-medium whitespace-nowrap transition
+                       class="relative border-b-2 px-2.5 py-4 text-sm font-medium whitespace-nowrap transition
                               {{ $tab['active']
                                   ? 'border-brand-500 text-white'
                                   : 'border-transparent text-slate-400 hover:border-slate-600 hover:text-slate-200' }}">
@@ -68,7 +70,6 @@
         </div>
     </footer>
 
-    {{-- Toasts are rendered by the Alpine store so any page can raise one. --}}
     <div x-data x-cloak
          class="no-print pointer-events-none fixed inset-x-0 bottom-0 z-50 flex flex-col items-center gap-2 p-4 sm:items-end">
         <template x-for="toast in $store.toasts.items" :key="toast.id">
