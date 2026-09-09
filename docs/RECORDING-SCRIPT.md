@@ -10,13 +10,14 @@ sync. Laravel 12, MySQL, Blade with Alpine on the front. Show the dashboard.
 
 ## 2. Raise a bill (90s)
 
-New Order.
+New Order. Point out the three numbered steps: customer, items, payment.
 
-- Type `thomas@` — point out the lookup filling the name in and the "returning customer" badge.
-- Search `parle`, press Enter. Search `colgate`, Enter. Point out that stock shows on each option
-  and that products already on the bill drop out of the list.
+- Open the customer dropdown, type `thom`, pick Thomas. Mention that a walk-in who is not on file
+  is added inline with "+ New customer" without leaving the bill.
+- Tap two or three product cards. Point out that the card shows price and stock, carries its
+  quantity once it is on the bill, and that search filters the grid live.
 - Raise a quantity with the stepper — totals update live.
-- Enter ₹1000 as cash — balance to return, plus the notes and coins to hand back.
+- Tap one of the quick-cash chips — balance to return, plus the notes and coins to hand back.
 - Generate Bill. Land on the invoice.
 
 Say: the totals on screen are computed the same way the server computes them, in integer paise with
@@ -40,7 +41,7 @@ Back to New Order.
 Say: the client checks the obvious things, but stock is only ever checked by the server, inside the
 transaction that holds the row lock. Anything else would be a guess.
 
-## 5. Edit and void (90s)
+## 5. Edit and delete (90s)
 
 Orders → open a bill → Edit.
 
@@ -48,13 +49,16 @@ Orders → open a bill → Edit.
 - Inventory: stock has moved by the difference, not by the whole line.
 - The product ledger now shows a "Bill edited" row.
 
-Back to the bill → Void, with a reason.
+Back to the bill → Delete.
 
 - Stock returns in full.
-- The bill is still there under the voided filter, marked, and can no longer be edited.
+- The bill is still there under the deleted filter, marked, and can no longer be edited.
 
-Say: deleting a tax invoice throws away a record of something that really happened, so delete means
-void here.
+Say: every table soft deletes. Removing a bill outright would throw away the record of a
+transaction that really happened and leave the ledger pointing at nothing.
+
+Then Customers → add one, rename it, delete it. Point out that a deleted customer's bills still
+print with their name on them.
 
 ## 6. Concurrency (120s)
 
@@ -69,8 +73,8 @@ should succeed.
 
 ## 7. Tests and README (60s)
 
-- `php artisan test` — 59 passing.
-- Scroll the edit and void test files; point at the "changes nothing" assertions.
+- `php artisan test` — 67 passing.
+- Scroll the edit and delete test files; point at the "changes nothing" assertions.
 - Show the README's assumptions section and say that anything ambiguous in the brief was decided
   and written down there rather than left open.
 

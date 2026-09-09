@@ -1,13 +1,13 @@
 # Store Order & Inventory Mini-System
 
 A Laravel application for a retail counter: bill a customer against a product catalogue, keep stock
-in sync, and edit or void a bill afterwards without the stock ledger drifting.
+in sync, and edit or delete a bill afterwards without the stock ledger drifting.
 
 Built as a take-home assignment for Mallow Technologies. The JSON API is the part the brief
 specifies; the screens on top of it use that same API.
 
 **Laravel 12** · **PHP 8.4** · **MySQL 8+ / MariaDB** (PostgreSQL works unchanged) ·
-**Blade + Alpine.js + Tailwind 4** · **59 tests**
+**Blade + Alpine.js + Tailwind 4** · **67 tests**
 
 ![Dashboard](docs/screenshots/01-dashboard.png)
 
@@ -21,7 +21,7 @@ specifies; the screens on top of it use that same API.
 - [The API](#the-api)
 - [Schema](#schema)
 - [No overselling under concurrent requests](#no-overselling-under-concurrent-requests)
-- [Editing and voiding a bill](#editing-and-voiding-a-bill)
+- [Editing and deleting a bill](#editing-and-deleting-a-bill)
 - [Tests](#tests)
 - [How the brief is covered](#how-the-brief-is-covered)
 - [Assumptions and judgment calls](#assumptions-and-judgment-calls)
@@ -68,20 +68,21 @@ Confirmation emails do not go over SMTP. `MAIL_MAILER=log` writes each rendered 
 
 ## What it does
 
-**Billing**
+**Billing** — three steps down one column: customer, items, payment
 
-- Type-ahead product search over name or code, driven from the keyboard
+- Customer picked from a searchable dropdown, or added inline without leaving the bill
+- Products chosen from a card grid with a live search; a card shows its price, stock and how many
+  are on the bill
 - Line quantities clamped to stock, with live subtotal, per-line tax and grand total
-- Cash tendered, balance to return, and the notes and coins to hand back
-- Customer looked up by email as it is typed; a returning customer's name fills itself in
+- Cash tendered with quick-amount chips, balance to return, and the notes and coins to hand back
 - Validation on both sides, with server errors mapped back onto the field that caused them
 
 **Orders**
 
-- Full bill history, filterable by customer email
+- Full bill history, filterable by customer email or by deleted
 - A printable tax invoice for every bill
 - **Edit a bill** — change lines, quantities or the customer; stock is reconciled as a delta
-- **Void a bill** — every unit goes back on the shelf, the bill is kept for the audit trail
+- **Delete a bill** — every unit goes back on the shelf, the record is kept for the audit trail
 
 **Inventory**
 
@@ -96,8 +97,9 @@ Confirmation emails do not go over SMTP. `MAIL_MAILER=log` writes each rendered 
 
 **Customers**
 
+- Add, edit and delete a customer from the customer list
 - Ranked by lifetime value, with bill count and last purchase
-- A per-customer page with their full history, voided bills included
+- A per-customer page with their full history, deleted bills included
 
 ---
 
@@ -107,7 +109,7 @@ Confirmation emails do not go over SMTP. `MAIL_MAILER=log` writes each rendered 
 | --- | --- |
 | `/` | Dashboard |
 | `/pos` | New Order |
-| `/orders` | Orders, filterable by email or voided |
+| `/orders` | Orders, filterable by email or deleted |
 | `/orders/{order}` | Printable bill |
 | `/orders/{order}/edit` | Edit a bill |
 | `/customers`, `/customers/{customer}` | Customers and their history |
@@ -115,58 +117,81 @@ Confirmation emails do not go over SMTP. `MAIL_MAILER=log` writes each rendered 
 
 ### New Order
 
-Search the catalogue, add lines, take cash. Totals update as you type.
+The bill is built in three numbered steps down one column — customer, items, payment — with what
+needs reordering kept out of the way in the side column.
 
-![New order](docs/screenshots/03-new-order-filled.png)
+![New order](docs/screenshots/04-new-order-filled.png)
 
-The product picker filters on name or code. Arrow keys move, Enter adds, and products already on
-the bill drop out of the results. Every option shows its price and what is left on the shelf.
+The customer comes from a searchable dropdown of everyone on file.
 
-![Product search](docs/screenshots/04-product-search.png)
+![Customer picker](docs/screenshots/03-customer-picker.png)
+
+A walk-in who is not on file yet is added inline, without leaving the bill.
+
+![New customer](docs/screenshots/05-new-customer-inline.png)
+
+Products are a card grid rather than a dropdown: search filters it live, a tap adds a unit, and a
+card that is already on the bill carries its quantity.
+
+![New order, empty](docs/screenshots/02-new-order-empty.png)
 
 ### Validation
 
 The client catches the obvious cases before a request is made.
 
-![Validation](docs/screenshots/05-validation-errors.png)
+![Validation](docs/screenshots/06-validation-errors.png)
 
 Anything the server rejects comes back onto the field that caused it. A stock shortage highlights
 the offending row and says how many are actually left — that number is the server's answer, not the
 browser's guess.
 
-![Stock shortage](docs/screenshots/06-stock-shortage.png)
+![Stock shortage](docs/screenshots/07-stock-shortage.png)
 
-### Orders and the bill
+### Orders
 
-![Orders](docs/screenshots/07-orders.png)
+Every bill, with View, Edit and Delete on the row.
 
-![Bill](docs/screenshots/08-bill.png)
+![Orders](docs/screenshots/08-orders.png)
 
-### Editing and voiding
+A deleted bill is not gone: it stays under its own filter, marked, and can still be opened.
+
+![Deleted bills](docs/screenshots/09-orders-deleted.png)
+
+![Bill](docs/screenshots/10-bill.png)
+
+### Editing and deleting
 
 Editing reopens the bill with its lines loaded and the units it already holds added back to
 sellable stock, so a cashier can raise a quantity without the screen claiming there is none left.
 
-![Edit a bill](docs/screenshots/09-edit-bill.png)
+![Edit a bill](docs/screenshots/11-edit-bill.png)
 
-![Void a bill](docs/screenshots/10-void-dialog.png)
+![Delete a bill](docs/screenshots/12-delete-bill.png)
 
-### Customers and inventory
+### Customers
 
-![Customers](docs/screenshots/11-customers.png)
+Add, edit and delete from the list.
 
-![Inventory](docs/screenshots/12-inventory.png)
+![Customers](docs/screenshots/13-customers.png)
 
-Every product carries its own ledger. Sales, edits, voids and restocks all land here with the
+![Customer form](docs/screenshots/14-customer-form.png)
+
+![Customer detail](docs/screenshots/15-customer-detail.png)
+
+### Inventory
+
+![Inventory](docs/screenshots/16-inventory.png)
+
+Every product carries its own ledger. Sales, edits, deletions and restocks all land here with the
 balance they left behind.
 
-![Stock ledger](docs/screenshots/13-stock-ledger.png)
+![Stock ledger](docs/screenshots/17-stock-ledger.png)
 
-![Restock](docs/screenshots/14-restock-dialog.png)
+![Restock](docs/screenshots/18-restock.png)
 
 ### On a phone
 
-<img src="docs/screenshots/15-mobile.png" width="320" alt="Dashboard on a phone">
+<img src="docs/screenshots/19-mobile-pos.png" width="320" alt="The counter screen on a phone">
 
 ---
 
@@ -239,27 +264,44 @@ A short shelf returns `422` naming every product that could not be filled, and n
 `PUT /api/orders/{order}`
 
 Takes the same body as `POST`. The line set is replaced, stock is reconciled as a delta, and the
-bill is repriced. Editing a voided bill returns `409`.
+bill is repriced. Editing a deleted bill returns `409`.
 
-### Void a bill
+### Delete a bill
 
 `DELETE /api/orders/{order}`
 
 ```bash
-curl -X DELETE http://localhost:8000/api/orders/13 \
-  -H 'Content-Type: application/json' -H 'Accept: application/json' \
-  -d '{ "reason": "Customer changed their mind" }'
+curl -X DELETE http://localhost:8000/api/orders/13 -H 'Accept: application/json'
 ```
 
-`204`. Every unit goes back on the shelf and the bill is soft deleted with its reason. Voiding a
-voided bill returns `409`.
+`204`. Every unit goes back on the shelf and the bill is soft deleted. Deleting a deleted bill
+returns `409` rather than crediting the stock twice.
+
+### Customers
+
+```
+GET    /api/customers            list, with ?search=
+POST   /api/customers            create
+PUT    /api/customers/{customer} update
+DELETE /api/customers/{customer} delete
+GET    /api/customers/lookup?email=
+```
+
+```bash
+curl -X POST http://localhost:8000/api/customers \
+  -H 'Content-Type: application/json' -H 'Accept: application/json' \
+  -d '{ "name": "Priya Nair", "email": "priya@example.com" }'
+```
+
+Emails are unique and normalised to lower case; the uniqueness rule ignores the customer being
+edited so saving a record unchanged does not trip over itself.
 
 ### A customer's bill history
 
 `GET /api/orders?email=thomas@example.com&per_page=15`
 
-Most recent first, paginated. `404` if that email has never bought anything. Voided bills are
-excluded unless you pass `include_voided=1`.
+Most recent first, paginated. `404` if that email has never bought anything. Deleted bills are
+excluded unless you pass `include_deleted=1`.
 
 ### Products running low
 
@@ -303,9 +345,11 @@ customers ──< orders ──< order_items >── products
 | --- | --- |
 | `products` | `code` unique, `unit_price`, `tax_percentage`, `stock_on_hand`, optional `low_stock_threshold` |
 | `customers` | `email` unique, stored lower-cased |
-| `orders` | totals, `amount_tendered` / `change_due`, `void_reason`, soft deletes |
+| `orders` | totals, `amount_tendered` / `change_due` |
 | `order_items` | quantity and a **snapshot** of price and tax rate, unique per `(order_id, product_id)` |
 | `stock_movements` | append-only ledger of every change to `stock_on_hand` |
+
+Every table carries a `deleted_at`, so nothing in this schema is ever removed outright.
 
 Four decisions worth calling out.
 
@@ -315,7 +359,7 @@ rewrite last week's bills, and reprinting an old receipt has to produce the same
 first time.
 
 **`stock_movements` is the supporting table the brief invites.** `products.stock_on_hand` alone
-tells you where stock is now but never how it got there. Every sale, edit, void and restock writes a
+tells you where stock is now but never how it got there. Every sale, edit, deletion and restock writes a
 row with the change and the balance it left behind, so a mismatch between the shelf and the system
 can be traced back to the bill that caused it. It is what the per-product ledger screen renders.
 
@@ -324,9 +368,15 @@ primary key as `ORD-20260909-00013`. Storing it as a column would mean a second 
 generate safely under concurrency and to keep in sync, for something that is a presentation of the
 id and nothing more.
 
-**Voided bills are soft deleted, not removed.** A tax invoice that has been handed to a customer is
-not something to delete a row for. The bill, its lines and its movements all stay; the bill simply
-stops counting towards revenue and history, and remains readable under the voided filter.
+**Deleting is soft, everywhere.** A tax invoice that has been handed to a customer is not something
+to remove a row for, and neither is a customer with history behind them. Every table soft deletes:
+the record stays, it just stops appearing. A deleted bill returns its stock, stops counting towards
+revenue, and remains readable under the deleted filter.
+
+One consequence worth knowing about: `order_items` has a unique index on `(order_id, product_id)`,
+and a soft-deleted row still occupies it. Replacing the lines during an edit therefore uses
+`forceDelete()` — the invoice is the record that matters, not the intermediate line sets it passed
+through.
 
 ---
 
@@ -381,7 +431,7 @@ php artisan orders:place --email=thomas@example.com --item=7:2 --item=10:1 --ten
 
 ---
 
-## Editing and voiding a bill
+## Editing and deleting a bill
 
 Editing is the harder of the two, because stock has to be reconciled rather than simply taken.
 `OrderService::update()` compares the previous line quantities against the requested ones and
@@ -399,9 +449,9 @@ the old and new product sets. If any product cannot cover its delta the edit is 
 bill is left exactly as it was — the tests assert that both the lines and the stock are unchanged
 after a failed edit.
 
-Voiding is the same machinery with every line as a positive delta, followed by a soft delete. Both
+Deleting is the same machinery with every line as a positive delta, followed by a soft delete. Both
 operations write `stock_movements` rows tagged with their reason, so the ledger reads as a story:
-sale, bill edited, bill voided, restock.
+sale, bill edited, bill deleted, restock.
 
 ---
 
@@ -412,7 +462,7 @@ php artisan test
 ```
 
 ```
-Tests:  59 passed (252 assertions)
+Tests:  67 passed (286 assertions)
 ```
 
 The suite runs on in-memory SQLite and takes a few seconds. Beyond the happy path it covers the
@@ -435,17 +485,23 @@ cases I would expect to break in production.
 - the adjustment is recorded as its own stock movement with the correct balance
 - cash that no longer covers a grown bill is refused
 
-**Voiding a bill**
-- every unit goes back, and the bill is kept as a soft-deleted record with its reason
-- a voided bill drops out of history unless explicitly asked for
-- voiding twice returns `409` and does **not** credit the stock a second time
-- a voided bill can be neither edited through the API nor opened in the edit screen
+**Deleting a bill**
+- every unit goes back, and the bill is kept as a soft-deleted record with its lines intact
+- a deleted bill drops out of history unless explicitly asked for
+- deleting twice returns `409` and does **not** credit the stock a second time
+- a deleted bill can be neither edited through the API nor opened in the edit screen
+
+**Customers**
+- created, renamed and deleted through the API, with emails normalised and kept unique
+- the uniqueness rule ignores the record being edited
+- a deleted customer disappears from the list and from the counter lookup, while their bills stay
+  readable with their name on them
 
 **Inventory and reads**
 - the low-stock threshold resolving through all three of its levels
 - a restock lifts a product back out of the low-stock list, and its balance is recorded correctly
 - the customer lookup returns a clean `404` for an unknown email
-- the dashboard leaves voided bills out of revenue
+- the dashboard leaves deleted bills out of revenue
 - each screen is asserted on the data it puts in front of the user, not just a `200`
 
 **Concurrency**
@@ -466,12 +522,13 @@ cases I would expect to break in production.
 | 3. Customer order history by email | [`OrderController@index`](app/Http/Controllers/Api/OrderController.php) |
 | 4. Low-stock endpoint, configurable threshold | [`ProductController@lowStock`](app/Http/Controllers/Api/ProductController.php), [`config/inventory.php`](config/inventory.php) |
 | 5. Queued job on order creation | [`SendOrderConfirmation`](app/Jobs/SendOrderConfirmation.php) |
-| 6. Feature and unit tests with edge cases | [`tests`](tests) — 59 tests |
+| 6. Feature and unit tests with edge cases | [`tests`](tests) — 67 tests |
 | 7. Safe under concurrent requests | [Concurrency](#no-overselling-under-concurrent-requests), [`ConcurrentOrderTest`](tests/Feature/ConcurrentOrderTest.php) |
 | Eloquent relationships, migrations, form-request validation | [`app/Models`](app/Models), [`app/Http/Requests`](app/Http/Requests) |
 | Thin controllers, logic in services | [`app/Services`](app/Services) — controllers validate, delegate, return a resource |
 | README with setup and assumptions | this file |
 | Prompt log | [`prompts/`](prompts/) |
+| Screen recording | script in [`docs/RECORDING-SCRIPT.md`](docs/RECORDING-SCRIPT.md) |
 
 ---
 
@@ -508,22 +565,28 @@ counter, so the breakdown covers the rupee part while `change_due` keeps the exa
 wireframe's own example (`₹22.80 → 1×20 + 1×2 + 1×1`) is inconsistent, as are its line totals
 against its subtotal, so I read it as a layout reference rather than a spec for the arithmetic.
 
-**Deleting a bill means voiding it.** Hard-deleting a tax invoice throws away the record of a
-transaction that really happened and leaves the stock ledger with a movement pointing at nothing.
-Voiding returns the stock, keeps the document, and records why. From the counter's point of view
-the bill is gone; from the auditor's it is still there.
+**Nothing is hard deleted.** Every table soft deletes. Removing a bill throws away the record of a
+transaction that really happened and leaves the stock ledger pointing at nothing; removing a
+customer takes their name off bills that have already been printed. From the counter's point of
+view a deleted record is gone, and from the auditor's it is still there.
 
 **Editing a bill re-sends the confirmation.** The customer's copy is now wrong, so the job is
-dispatched again with the revised bill. Voiding does not send anything — telling someone their bill
+dispatched again with the revised bill. Deleting does not send anything — telling someone their bill
 was cancelled is a decision for whoever cancelled it, not an automatic email.
 
 **The edit screen counts the bill's own units as available.** A bill holding four units of a
 product that has six left can be raised to ten, because those four are only committed to that bill.
 The server checks the real delta under a lock regardless.
 
-**A customer is identified by email alone.** Name is required the first time an email is seen and
-optional afterwards; a returning customer keeps the name on file unless a new one is typed. Emails
-are normalised to lower case so `THOMAS@example.com` and `thomas@example.com` are one person.
+**A customer is identified by email alone.** The counter screen picks one from a dropdown, but the
+API still keys on email so an integration can post a bill without looking an id up first. A name is
+required only the first time an email is seen. Emails are normalised to lower case so
+`THOMAS@example.com` and `thomas@example.com` are one person.
+
+**Deleting a customer does not touch their bills.** Their name and email were snapshotted onto
+nothing — the bill points at the customer row — so the relation reads through the soft delete with
+`withTrashed()`. The bill still prints correctly; the customer simply stops appearing in the list
+and in the counter's dropdown.
 
 **The confirmation email is HTML, not a PDF attachment.** The wireframe annotates the Generate Bill
 button with "emails PDF to customer", but the functional requirement asks only that the queued job
@@ -571,12 +634,14 @@ app/
   Support/CashDrawer.php              Change split into notes and coins
 resources/js/
   money.js                            Mirrors Money and CashDrawer so totals stay live on screen
-  components/orderForm.js             Counter screen: type-ahead, totals, validation, submit
-  components/voidOrder.js             Void confirmation
+  components/orderForm.js             Counter screen: customer, product cards, totals, validation
+  components/customerForm.js          Customer add, edit and delete
+  components/deleteOrder.js           Delete confirmation
   components/restockProduct.js        Restock dialog
   stores/toasts.js                    Shared success and failure notifications
 resources/views/
-  components/                         Blade UI kit: field, stat, stock-badge, empty-state
+  components/                         Blade UI kit: field, stat, stock-badge, empty-state,
+                                      modal, pagination
   layouts/app.blade.php               Shell, navigation, toast outlet
   dashboard/ billing/ orders/ customers/ products/
 tests/Feature/ConcurrentOrderTest.php Six real processes against one product

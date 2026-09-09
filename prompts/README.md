@@ -72,28 +72,48 @@ Asked for the counter screen from the wireframe: customer fields, product rows w
 totals, the low-stock panel, and the cash-tendered and balance-to-return block. Kept to Blade plus
 plain JavaScript posting to the same `/api/orders` endpoint — nothing here needed a framework.
 
-## 8. Editing and voiding a bill
+## 8. Editing and deleting a bill
 
-Asked for edit and delete on a bill. The first shape that came back deleted the order row outright.
-Changed it: a tax invoice that has been handed to a customer is not a row to delete, so "delete"
-became a **void** — stock returned, bill soft deleted with a reason, still readable under a filter.
+Asked for edit and delete on a bill. The first version hard-deleted the order row, which throws away
+the record of a transaction that really happened and leaves the stock ledger pointing at nothing.
+It became a soft delete instead: stock returned, record kept, still readable under a filter.
+
+An intermediate version called this "voiding". That is the accounting word for it, but nobody at a
+counter says it, so the whole thing went back to plain "delete" with the soft delete doing the work
+underneath.
+
+Every table then got a `deleted_at`. That flushed out a real problem: `order_items` has a unique
+index on `(order_id, product_id)`, and a soft-deleted row still occupies it, so replacing lines
+during an edit would fail the second time the same product appeared. Replacing lines uses
+`forceDelete()` for that reason.
 
 The edit was reworked too. The first version deleted the old lines and took stock for the new ones,
 which double-counts anything that appears in both. It now computes **one delta per product** across
 the union of the old and new line sets and applies it inside the same locked transaction as a sale.
 
-## 9. Extra screens
+## 9. Rebuilding the counter screen
+
+The first counter screen used a type-ahead that added one line at a time, which reads well in a
+demo and badly at a till. It became a card grid: the whole catalogue visible, search filtering it
+live, one tap per unit, and the quantity shown on the card itself.
+
+The customer field changed the same way — a dropdown over everyone on file, with adding a new one
+folded into the same control rather than a separate page. Payment moved from the side column to the
+bottom of the same column, so the bill reads top to bottom in the order it is actually built:
+customer, items, payment.
+
+## 10. Extra screens
 
 Asked for the screens a counter actually needs beyond the wireframe: a dashboard, a customer list,
 and a per-product stock ledger. The ledger was the point of `stock_movements` all along — this is
 where the table stops being schema and starts being a feature.
 
-## 10. Comments
+## 11. Comments
 
 Asked for the code to be stripped of comments and the reasoning moved into the README, next to the
 decision it explains. Docblocks were kept only where they carry types.
 
-## 11. Bugs the assistant introduced, and how they were caught
+## 12. Bugs the assistant introduced, and how they were caught
 
 Worth recording, since the brief asks how well the tooling was used rather than whether it was:
 
@@ -104,5 +124,11 @@ Worth recording, since the brief asks how well the tooling was used rather than 
   fired before the styled validation could. Caught while capturing the validation screenshot.
 - The dashboard chart rendered a percentage height inside a container with no height, so the bars
   were invisible. Caught in a browser screenshot, not by any test.
+
+- A blanket find-and-replace while renaming "void" to "delete" rewrote PHP `: void` return types
+  into `: delete`. Caught immediately by the test suite.
+- Blade's `@json` directive cannot parse a multi-line array literal written inline in an attribute.
+  It broke the page silently at compile time, twice, in two different files. The fix both times was
+  to build the array in PHP first and pass the variable.
 
 The general lesson: the tests catch logic, the browser catches everything else. Both were needed.

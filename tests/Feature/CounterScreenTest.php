@@ -51,7 +51,7 @@ class CounterScreenTest extends TestCase
 
         $this->assertSame(0, $response->viewData('today')['orders']);
         $this->assertSame(0.0, $response->viewData('today')['revenue']);
-        $this->assertSame(1, $response->viewData('allTime')['voided']);
+        $this->assertSame(1, $response->viewData('allTime')['deleted']);
     }
 
     public function test_the_counter_screen_lists_products_that_are_low_on_stock(): void
@@ -117,7 +117,7 @@ class CounterScreenTest extends TestCase
 
         $this->assertCount(1, $this->get('/orders?email=divya@example.com')->viewData('orders'));
         $this->assertCount(3, $this->get('/orders')->viewData('orders'), 'The voided bill is hidden by default.');
-        $this->assertCount(1, $this->get('/orders?voided=1')->viewData('orders'));
+        $this->assertCount(1, $this->get('/orders?deleted=1')->viewData('orders'));
     }
 
     public function test_a_bill_can_be_opened(): void
