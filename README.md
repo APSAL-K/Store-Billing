@@ -737,6 +737,16 @@ tests/Feature/ConcurrentOrderTest.php Six real processes against one product
 
 ## AI assistance
 
-AI tooling was used for this task, as the brief encourages. Screenshots of the prompts are in
-[`prompts/`](prompts/) alongside a written log of what was asked at each step and where I changed
-the direction the output was heading.
+AI tooling was used throughout, as the brief encourages. The record is in
+[`prompts/`](prompts/):
+
+- [`prompts/PROMPTS.md`](prompts/PROMPTS.md) — every prompt I sent, verbatim and in order, with an
+  English gloss and what each one produced.
+- [`prompts/screenshots/`](prompts/screenshots/) — the same prompts captured from the editor panel.
+- [`prompts/README.md`](prompts/README.md) — what came back, what I kept, where I sent it back for
+  another pass, and **the bugs the assistant wrote that the tests and the browser caught**.
+
+That last part is the one worth reading. A restock that recorded double the balance, a soft-deleted
+product that could still be sold, `HOUR()` in a query that has to run on SQLite, a blanket rename
+that rewrote `: void` return types — none of those came from the brief being unclear. They came
+from taking generated code at face value, and each one is written down next to how it was found.
