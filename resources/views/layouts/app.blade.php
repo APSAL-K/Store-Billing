@@ -13,7 +13,7 @@
     ];
 
     $mark = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">'
-        .'<rect width="32" height="32" rx="7" fill="#1d63d1"/>'
+        .'<rect width="32" height="32" rx="7" fill="#6d3fe0"/>'
         .'<path d="M8 9h2l.6 2.6M12 20h9l2.6-8H10.6M12 20l-2-8m2 8-1.6 4.4h11" fill="none" stroke="#fff" '
         .'stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 @endphp
@@ -25,8 +25,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="description" content="Store Order &amp; Inventory Mini-System">
-    <meta name="theme-color" content="#f3f5f9" media="(prefers-color-scheme: light)">
-    <meta name="theme-color" content="#0c111c" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#f7f6f4">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>@yield('title', 'Counter') &middot; {{ config('app.name') }}</title>
 
@@ -36,18 +35,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-    <script>
-        (() => {
-            try {
-                const saved = localStorage.getItem('theme');
-                const dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
-                document.documentElement.classList.toggle('dark', dark);
-            } catch (e) {
-                document.documentElement.classList.remove('dark');
-            }
-        })();
-    </script>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -94,21 +81,6 @@
                     </span>
                     <span class="tnum">{{ now()->format('d M Y') }}</span>
                 </span>
-
-                <button type="button" x-data @click="$store.theme.toggle()"
-                        class="flex size-8 items-center justify-center rounded-lg text-shell-ink/60 transition hover:bg-white/10 hover:text-shell-ink"
-                        :aria-label="$store.theme.dark ? 'Switch to light mode' : 'Switch to dark mode'">
-                    <svg x-show="!$store.theme.dark" class="size-4.5" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                         aria-hidden="true">
-                        <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>
-                    </svg>
-                    <svg x-show="$store.theme.dark" x-cloak class="size-4.5" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-                        <circle cx="12" cy="12" r="4"/>
-                        <path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
-                    </svg>
-                </button>
 
                 <a href="{{ route('billing.index') }}"
                    class="hidden rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-500 sm:inline-block">
@@ -165,13 +137,6 @@
                     <p class="text-xs text-muted">Store Order &amp; Inventory Mini-System</p>
                 </div>
             </div>
-
-            <nav class="flex flex-wrap gap-x-5 gap-y-2" aria-label="Footer">
-                @foreach ($tabs as $tab)
-                    <a href="{{ route($tab['route']) }}"
-                       class="text-xs font-medium text-muted transition hover:text-brand-700">{{ $tab['label'] }}</a>
-                @endforeach
-            </nav>
 
             <p class="tnum text-xs text-faint">
                 Laravel {{ app()->version() }} &middot; PHP {{ PHP_MAJOR_VERSION }}.{{ PHP_MINOR_VERSION }}

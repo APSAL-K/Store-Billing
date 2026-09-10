@@ -5,154 +5,64 @@
 @source '../**/*.blade.php';
 @source '../**/*.js';
 
-@custom-variant dark (&:where(.dark, .dark *));
-
+/*
+ * Every colour a screen uses resolves through one of these. Nothing in a view
+ * reaches for a raw palette value, so a change here is a change everywhere.
+ */
 @theme {
     --font-sans: 'Inter', ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
         'Helvetica Neue', Arial, sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
-    --color-brand-50: var(--brand-50);
-    --color-brand-100: var(--brand-100);
-    --color-brand-200: var(--brand-200);
-    --color-brand-300: var(--brand-300);
-    --color-brand-400: var(--brand-400);
-    --color-brand-500: var(--brand-500);
-    --color-brand-600: var(--brand-600);
-    --color-brand-700: var(--brand-700);
-    --color-brand-800: var(--brand-800);
-    --color-brand-900: var(--brand-900);
-    --color-brand-950: var(--brand-950);
+    --color-brand-50: oklch(0.972 0.017 292);
+    --color-brand-100: oklch(0.942 0.036 292);
+    --color-brand-200: oklch(0.888 0.068 292);
+    --color-brand-300: oklch(0.803 0.115 291);
+    --color-brand-400: oklch(0.694 0.165 290);
+    --color-brand-500: oklch(0.602 0.203 289);
+    --color-brand-600: oklch(0.528 0.219 288);
+    --color-brand-700: oklch(0.457 0.196 288);
+    --color-brand-800: oklch(0.388 0.158 288);
+    --color-brand-900: oklch(0.331 0.121 288);
+    --color-brand-950: oklch(0.228 0.082 289);
 
-    --color-canvas: var(--canvas);
-    --color-surface: var(--surface);
-    --color-raised: var(--raised);
-    --color-sunken: var(--sunken);
-    --color-line: var(--line);
-    --color-line-strong: var(--line-strong);
+    /* Warm greys. Against a violet brand they read softer than the usual blue-grey. */
+    --color-canvas: oklch(0.973 0.004 85);
+    --color-surface: oklch(1 0 0);
+    --color-raised: oklch(0.985 0.003 85);
+    --color-sunken: oklch(0.958 0.005 85);
+    --color-line: oklch(0.923 0.005 85);
+    --color-line-strong: oklch(0.868 0.008 85);
 
-    --color-ink: var(--ink);
-    --color-body: var(--body);
-    --color-muted: var(--muted);
-    --color-faint: var(--faint);
+    --color-ink: oklch(0.252 0.024 290);
+    --color-body: oklch(0.438 0.019 290);
+    --color-muted: oklch(0.578 0.015 290);
+    --color-faint: oklch(0.7 0.012 290);
 
-    --color-shell: var(--shell);
-    --color-shell-ink: var(--shell-ink);
-    --color-shell-line: var(--shell-line);
+    --color-shell: oklch(0.218 0.048 289);
+    --color-shell-ink: oklch(0.98 0.006 290);
+    --color-shell-line: oklch(0.33 0.055 289);
 
-    --color-success-fill: var(--success-fill);
-    --color-warn-fill: var(--warn-fill);
-    --color-danger-fill: var(--danger-fill);
+    /* Status colours at text weight, dark enough to read on a pale card. */
+    --color-success: oklch(0.52 0.13 155);
+    --color-success-soft: oklch(0.962 0.03 155);
+    --color-success-line: oklch(0.88 0.06 155);
+    --color-warn: oklch(0.55 0.13 75);
+    --color-warn-soft: oklch(0.962 0.04 85);
+    --color-warn-line: oklch(0.87 0.08 85);
+    --color-danger: oklch(0.55 0.19 20);
+    --color-danger-soft: oklch(0.962 0.03 20);
+    --color-danger-line: oklch(0.89 0.06 20);
 
-    --color-success: var(--success);
-    --color-success-soft: var(--success-soft);
-    --color-success-line: var(--success-line);
-    --color-warn: var(--warn);
-    --color-warn-soft: var(--warn-soft);
-    --color-warn-line: var(--warn-line);
-    --color-danger: var(--danger);
-    --color-danger-soft: var(--danger-soft);
-    --color-danger-line: var(--danger-line);
-}
-
-/*
- * Every colour a screen uses resolves through one of these. Dark mode is the
- * same design with a different set of values, not a second set of classes.
- */
-:root {
-    color-scheme: light;
-
-    --brand-50: oklch(0.97 0.015 245);
-    --brand-100: oklch(0.94 0.032 245);
-    --brand-200: oklch(0.89 0.06 243);
-    --brand-300: oklch(0.81 0.1 241);
-    --brand-400: oklch(0.71 0.14 245);
-    --brand-500: oklch(0.61 0.17 250);
-    --brand-600: oklch(0.53 0.18 253);
-    --brand-700: oklch(0.45 0.16 255);
-    --brand-800: oklch(0.38 0.13 256);
-    --brand-900: oklch(0.32 0.1 256);
-    --brand-950: oklch(0.22 0.07 257);
-
-    --canvas: oklch(0.97 0.006 250);
-    --surface: oklch(1 0 0);
-    --raised: oklch(0.985 0.004 250);
-    --sunken: oklch(0.955 0.008 250);
-    --line: oklch(0.92 0.008 250);
-    --line-strong: oklch(0.86 0.012 250);
-
-    --ink: oklch(0.24 0.025 258);
-    --body: oklch(0.42 0.02 256);
-    --muted: oklch(0.56 0.018 256);
-    --faint: oklch(0.68 0.015 256);
-
-    --shell: oklch(0.21 0.03 258);
-    --shell-ink: oklch(0.98 0.005 250);
-    --shell-line: oklch(0.32 0.03 258);
-
-    --success-fill: oklch(0.68 0.16 155);
-    --warn-fill: oklch(0.78 0.15 80);
-    --danger-fill: oklch(0.63 0.21 22);
-
-    --success: oklch(0.52 0.13 155);
-    --success-soft: oklch(0.96 0.03 155);
-    --success-line: oklch(0.88 0.06 155);
-    --warn: oklch(0.55 0.13 75);
-    --warn-soft: oklch(0.96 0.04 85);
-    --warn-line: oklch(0.87 0.08 85);
-    --danger: oklch(0.55 0.19 20);
-    --danger-soft: oklch(0.96 0.03 20);
-    --danger-line: oklch(0.89 0.06 20);
-}
-
-.dark {
-    color-scheme: dark;
-
-    --brand-50: oklch(0.24 0.05 255);
-    --brand-100: oklch(0.29 0.07 255);
-    --brand-200: oklch(0.35 0.1 254);
-    --brand-300: oklch(0.45 0.13 252);
-    --brand-400: oklch(0.58 0.16 249);
-    --brand-500: oklch(0.68 0.16 246);
-    --brand-600: oklch(0.75 0.14 243);
-    --brand-700: oklch(0.82 0.11 241);
-    --brand-800: oklch(0.88 0.08 240);
-    --brand-900: oklch(0.93 0.05 240);
-    --brand-950: oklch(0.97 0.02 240);
-
-    --canvas: oklch(0.17 0.018 258);
-    --surface: oklch(0.22 0.02 258);
-    --raised: oklch(0.25 0.022 258);
-    --sunken: oklch(0.19 0.018 258);
-    --line: oklch(0.31 0.022 258);
-    --line-strong: oklch(0.4 0.025 258);
-
-    --ink: oklch(0.97 0.008 250);
-    --body: oklch(0.87 0.012 252);
-    --muted: oklch(0.7 0.015 254);
-    --faint: oklch(0.58 0.015 254);
-
-    --shell: oklch(0.14 0.02 258);
-    --shell-ink: oklch(0.97 0.008 250);
-    --shell-line: oklch(0.28 0.025 258);
-
-    --success-fill: oklch(0.72 0.16 155);
-    --warn-fill: oklch(0.78 0.14 82);
-    --danger-fill: oklch(0.65 0.19 22);
-
-    --success: oklch(0.78 0.15 155);
-    --success-soft: oklch(0.28 0.06 155);
-    --success-line: oklch(0.4 0.09 155);
-    --warn: oklch(0.82 0.13 85);
-    --warn-soft: oklch(0.3 0.06 80);
-    --warn-line: oklch(0.44 0.09 80);
-    --danger: oklch(0.72 0.16 20);
-    --danger-soft: oklch(0.29 0.08 20);
-    --danger-line: oklch(0.43 0.12 20);
+    /* The same hues at the lightness a solid bar or dot wants. */
+    --color-success-fill: oklch(0.68 0.16 155);
+    --color-warn-fill: oklch(0.78 0.15 80);
+    --color-danger-fill: oklch(0.63 0.21 22);
 }
 
 @layer base {
     html {
+        color-scheme: light;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
     }
@@ -205,18 +115,18 @@
     }
 
     .btn-primary {
-        @apply bg-brand-600 text-white shadow-sm shadow-brand-600/20 hover:bg-brand-700
-               active:bg-brand-800 focus-visible:outline-brand-600 dark:text-brand-950;
+        @apply bg-brand-600 text-white shadow-sm shadow-brand-600/25 hover:bg-brand-700
+               active:bg-brand-800 focus-visible:outline-brand-600;
     }
 
     .btn-success {
-        @apply bg-success text-white shadow-sm shadow-success/20 hover:brightness-110
-               active:brightness-95 focus-visible:outline-success dark:text-canvas;
+        @apply bg-success text-white shadow-sm shadow-success/25 hover:brightness-110
+               active:brightness-95 focus-visible:outline-success;
     }
 
     .btn-danger {
         @apply bg-danger text-white shadow-sm hover:brightness-110 active:brightness-95
-               focus-visible:outline-danger dark:text-canvas;
+               focus-visible:outline-danger;
     }
 
     .btn-ghost {
