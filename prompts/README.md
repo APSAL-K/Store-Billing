@@ -1,8 +1,16 @@
-# Prompt log
+# How this was built with AI
 
-The brief asks for the prompts used, with screenshots. The screenshots are in this folder; the
-notes below record what was asked at each step and, more usefully, where the first answer was not
-the one that shipped.
+The brief invites AI-assisted development and asks to see how well the tools were used rather than
+whether they were used at all. This is that record.
+
+- **[`PROMPTS.md`](PROMPTS.md)** — every prompt I sent, verbatim and in order, with an English
+  gloss and what each one produced.
+- **[`screenshots/`](screenshots/)** — the same prompts captured from the editor panel.
+- **This file** — what came back, what I kept, what I sent back for another pass, and the bugs the
+  assistant wrote that I had to catch.
+
+Tool: **Claude Code** (Opus 5) in the VS Code panel. Roughly a dozen prompts over the build; the
+useful ones were the corrections, not the requests.
 
 ## 1. Reading the brief
 
@@ -126,6 +134,14 @@ Two things I pushed back on in the generated shape:
 ## 12. Theme, shell and setup
 
 Asked for a stronger theme, a proper header and footer, easy setup and a responsive check.
+
+## 13. Palette, again
+
+Dark mode came out and the theme changed twice more — violet on warm grey, then a deep navy. Each
+of those was one block of CSS and nothing else, which is the whole return on the token discipline
+below.
+
+## 12b. What the palette work taught
 
 The palette changed twice — azure with a dark mode first, then a violet-on-warm-grey scheme in
 light only. Both changes were one block of CSS, because the first pass at dark mode had forced a
