@@ -6,6 +6,9 @@ use App\Http\Controllers\Api\ProductController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('products', [ProductController::class, 'index'])->name('api.products.index');
+Route::post('products', [ProductController::class, 'store'])->name('api.products.store');
+Route::put('products/{product}', [ProductController::class, 'update'])->name('api.products.update');
+Route::delete('products/{product}', [ProductController::class, 'destroy'])->name('api.products.destroy');
 Route::get('products/low-stock', [ProductController::class, 'lowStock'])->name('api.products.low-stock');
 
 Route::get('customers', [CustomerController::class, 'index'])->name('api.customers.index');

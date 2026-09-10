@@ -24,7 +24,7 @@ class StoreOrderRequest extends FormRequest
             ],
 
             'items' => ['required', 'array', 'min:1'],
-            'items.*.product_id' => ['required', 'integer', Rule::exists('products', 'id')],
+            'items.*.product_id' => ['required', 'integer', Rule::exists('products', 'id')->whereNull('deleted_at')],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:10000'],
 
             'amount_tendered' => ['nullable', 'numeric', 'min:0'],
@@ -39,7 +39,7 @@ class StoreOrderRequest extends FormRequest
         return [
             'customer.name.required' => 'A name is required the first time we see this email address.',
             'items.required' => 'An order needs at least one product line.',
-            'items.*.product_id.exists' => 'One of the selected products no longer exists.',
+            'items.*.product_id.exists' => 'One of the selected products is no longer in the catalogue.',
         ];
     }
 

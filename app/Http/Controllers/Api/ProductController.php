@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\RestockProductRequest;
+use App\Http\Requests\StoreProductRequest;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
 use App\Services\InventoryService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
@@ -23,6 +25,27 @@ class ProductController extends Controller
             ->get();
 
         return ProductResource::collection($products);
+    }
+
+    public function store(StoreProductRequest $request): JsonResponse
+    {
+        $product = Product::create($request->validated());
+
+        return ProductResource::make($product)->response()->setStatusCode(201);
+    }
+
+    public function update(StoreProductRequest $request, Product $product): ProductResource
+    {
+        $product->update($request->validated());
+
+        return ProductResource::make($product);
+    }
+
+    public function destroy(Product $product): JsonResponse
+    {
+        $product->delete();
+
+        return response()->json(null, 204);
     }
 
     public function restock(
