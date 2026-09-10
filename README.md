@@ -7,7 +7,7 @@ Built as a take-home assignment for Mallow Technologies. The JSON API is the par
 specifies; the screens on top of it use that same API.
 
 **Laravel 12** · **PHP 8.4** · **MySQL 8+ / MariaDB** (PostgreSQL works unchanged) ·
-**Blade + Alpine.js + Tailwind 4** · **84 tests**
+**Blade + Alpine.js + Tailwind 4** · **light and dark** · **84 tests**
 
 ![Dashboard](docs/screenshots/01-dashboard.png)
 
@@ -35,27 +35,36 @@ specifies; the screens on top of it use that same API.
 ```bash
 git clone <repo-url> store-billing
 cd store-billing
-
 composer install
-cp .env.example .env
-php artisan key:generate
 ```
 
-Point the `DB_*` block in `.env` at your server, then create and fill the schema:
+Point the `DB_*` block in `.env.example` at your server — or leave it alone if you have MySQL on
+`127.0.0.1:3306` as root — then:
 
 ```bash
-mysql -u root -p -e "CREATE DATABASE store_billing"
-php artisan migrate --seed
+composer setup
 ```
 
-Build the front end and start the app. The queue worker is a separate process, which is the point
-of putting the confirmation email on a queue in the first place:
+That copies `.env`, generates the key, **creates the database if it does not exist**, migrates,
+seeds, installs the front-end packages and builds them. It is idempotent: run it again and it skips
+whatever is already done. `php artisan app:install --fresh` rebuilds the schema from scratch.
+
+Then start everything with one command:
 
 ```bash
-npm install && npm run build     # Node 20+ (Vite 7 / Tailwind 4)
+composer dev
+```
+
+which runs the web server, the **queue worker**, the log tailer and Vite together. To keep them
+apart:
+
+```bash
 php artisan serve                # http://localhost:8000
 php artisan queue:work           # in a second terminal
 ```
+
+The worker is a separate process on purpose — that is the point of putting the confirmation email
+on a queue rather than sending it inline.
 
 The seed leaves you fifteen products (a few deliberately short on stock so the low-stock alert has
 something to show), ten customers and twelve past bills. Two customers have predictable emails for
@@ -63,6 +72,15 @@ testing: `thomas@example.com` and `divya@example.com`.
 
 Confirmation emails do not go over SMTP. `MAIL_MAILER=log` writes each rendered message to
 `storage/logs/laravel.log`, so you can watch the worker pick a job up and read the bill it produced.
+
+### Running the tests
+
+```bash
+php artisan test
+```
+
+They run on in-memory SQLite and need no setup at all. One test — the concurrency one — wants a
+reachable MySQL server and skips with a message if there is not one.
 
 ---
 
@@ -101,6 +119,8 @@ Confirmation emails do not go over SMTP. `MAIL_MAILER=log` writes each rendered 
 **Everywhere**
 
 - Every listing paginates, with a page-size selector that keeps the filters you set
+- Light and dark, following the operating system until the header toggle overrides it
+- Responsive from 390px up, with the navigation collapsing into a drawer on small screens
 
 **Customers**
 
@@ -122,96 +142,107 @@ Confirmation emails do not go over SMTP. `MAIL_MAILER=log` writes each rendered 
 | `/customers`, `/customers/{customer}` | Customers and their history |
 | `/products`, `/products/{product}` | Inventory and a product's stock ledger |
 
+### Dashboard
+
+![Dashboard](docs/screenshots/01-dashboard.png)
+
+The whole app is light or dark. The choice follows the operating system until someone touches the
+toggle in the header, after which it is remembered.
+
+![Dashboard in dark mode](docs/screenshots/02-dashboard-dark.png)
+
 ### New Order
 
 The bill is built in three numbered steps down one column — customer, items, payment — with what
 needs reordering kept out of the way in the side column.
 
-![New order](docs/screenshots/04-new-order-filled.png)
+![New order](docs/screenshots/05-new-order-filled.png)
 
 The customer comes from a searchable dropdown of everyone on file.
 
-![Customer picker](docs/screenshots/03-customer-picker.png)
+![Customer picker](docs/screenshots/04-customer-picker.png)
 
 A walk-in who is not on file yet is added inline, without leaving the bill.
 
-![New customer](docs/screenshots/05-new-customer-inline.png)
+![New customer](docs/screenshots/06-new-customer-inline.png)
 
 Products are a card grid rather than a dropdown: search filters it live, a tap adds a unit, and a
 card that is already on the bill carries its quantity.
 
-![New order, empty](docs/screenshots/02-new-order-empty.png)
+![New order, empty](docs/screenshots/03-new-order-empty.png)
 
 ### Validation
 
 The client catches the obvious cases before a request is made.
 
-![Validation](docs/screenshots/06-validation-errors.png)
+![Validation](docs/screenshots/07-validation-errors.png)
 
 Anything the server rejects comes back onto the field that caused it. A stock shortage highlights
 the offending row and says how many are actually left — that number is the server's answer, not the
 browser's guess.
 
-![Stock shortage](docs/screenshots/07-stock-shortage.png)
+![Stock shortage](docs/screenshots/08-stock-shortage.png)
 
 ### Orders
 
 Every bill, with View, Edit and Delete on the row.
 
-![Orders](docs/screenshots/08-orders.png)
+![Orders](docs/screenshots/09-orders.png)
 
 A deleted bill is not gone: it stays under its own filter, marked, and can still be opened.
 
-![Deleted bills](docs/screenshots/09-orders-deleted.png)
+![Deleted bills](docs/screenshots/10-orders-deleted.png)
 
-![Bill](docs/screenshots/10-bill.png)
+![Bill](docs/screenshots/11-bill.png)
 
 ### Editing and deleting
 
 Editing reopens the bill with its lines loaded and the units it already holds added back to
 sellable stock, so a cashier can raise a quantity without the screen claiming there is none left.
 
-![Edit a bill](docs/screenshots/11-edit-bill.png)
+![Edit a bill](docs/screenshots/12-edit-bill.png)
 
-![Delete a bill](docs/screenshots/12-delete-bill.png)
+![Delete a bill](docs/screenshots/13-delete-bill.png)
 
 ### Customers
 
 Add, edit and delete from the list.
 
-![Customers](docs/screenshots/13-customers.png)
+![Customers](docs/screenshots/14-customers.png)
 
-![Customer form](docs/screenshots/14-customer-form.png)
+![Customer form](docs/screenshots/15-customer-form.png)
 
-![Customer detail](docs/screenshots/15-customer-detail.png)
+![Customer detail](docs/screenshots/16-customer-detail.png)
 
 ### Inventory
 
 The catalogue is managed here: add a product, edit it, restock it, or take it off the shelf.
 
-![Inventory](docs/screenshots/16-inventory.png)
+![Inventory](docs/screenshots/17-inventory.png)
 
-![Product form](docs/screenshots/17-product-form.png)
+![Product form](docs/screenshots/18-product-form.png)
 
 Stock is deliberately **not** editable on that form. It moves when a bill is raised, edited or
 deleted, and when a product is restocked — every change writes a ledger row, and letting someone
 type over the number would put the shelf and the ledger out of step with nothing explaining it.
 
-![Restock](docs/screenshots/18-restock.png)
+![Restock](docs/screenshots/19-restock.png)
 
 Every product carries its own ledger. Sales, edits, deletions and restocks all land here with the
 balance they left behind.
 
-![Stock ledger](docs/screenshots/19-stock-ledger.png)
+![Stock ledger](docs/screenshots/20-stock-ledger-dark.png)
 
 ### On a phone
 
-Every screen works down to 390px. Wide tables scroll inside their own container so the page itself
-never scrolls sideways.
+Every screen works down to 390px with no horizontal overflow anywhere — wide tables scroll inside
+their own container rather than pushing the page sideways. Below `md` the navigation collapses into
+a drawer.
 
 <p>
-<img src="docs/screenshots/20-mobile-dashboard.png" width="300" alt="The dashboard on a phone">
-<img src="docs/screenshots/21-mobile-pos.png" width="300" alt="The counter screen on a phone">
+<img src="docs/screenshots/21-mobile-dashboard.png" width="240" alt="The dashboard on a phone">
+<img src="docs/screenshots/22-mobile-pos.png" width="240" alt="The counter screen on a phone">
+<img src="docs/screenshots/23-mobile-menu-dark.png" width="240" alt="The navigation drawer in dark mode">
 </p>
 
 ---
@@ -567,7 +598,7 @@ cases I would expect to break in production.
 | 7. Safe under concurrent requests | [Concurrency](#no-overselling-under-concurrent-requests), [`ConcurrentOrderTest`](tests/Feature/ConcurrentOrderTest.php) |
 | Eloquent relationships, migrations, form-request validation | [`app/Models`](app/Models), [`app/Http/Requests`](app/Http/Requests) |
 | Thin controllers, logic in services | [`app/Services`](app/Services) — controllers validate, delegate, return a resource |
-| README with setup and assumptions | this file |
+| README with setup and assumptions | this file, plus `composer setup` |
 | Prompt log | [`prompts/`](prompts/) |
 | Screen recording | script in [`docs/RECORDING-SCRIPT.md`](docs/RECORDING-SCRIPT.md) |
 
@@ -658,6 +689,19 @@ pagination options a history endpoint wants anyway.
 **Products cannot be deleted** once they appear on a bill — the foreign key is `restrictOnDelete`.
 Deleting a product would orphan the history that the order-line snapshot exists to preserve.
 
+**Dark mode is one design with two sets of values, not two sets of classes.** Every colour a screen
+uses resolves through a semantic token — `surface`, `line`, `ink`, `body`, `muted`, `brand`,
+`success`, `warn`, `danger` — declared once in [`app.css`](resources/css/app.css) and redeclared
+under `.dark`. No view carries a `dark:` variant, so there is one place to change a colour and no
+way for the two themes to drift apart.
+
+Two of those tokens exist in pairs. `warn` is the text colour, dark enough to read on a pale
+background; `warn-fill` is the same hue at the lightness a solid bar or dot wants. Using one for
+both is what turns an amber legend dot into a brown one.
+
+The class is applied by a small inline script in the `<head>`, before the stylesheet paints, so a
+reload in dark mode never flashes white.
+
 **The code carries no comments.** Reasoning that would have gone in a comment is in this README
 instead, next to the decision it explains. Docblocks are kept only where they carry types a reader
 or static analysis needs.
@@ -683,6 +727,7 @@ app/
   Services/InventoryService.php       Restocking
   Services/DashboardMetrics.php       Dashboard queries, kept out of the controller
   Support/PerPage.php                 The page sizes the listings will accept
+  Console/Commands/Install.php        One-command setup: env, key, database, schema, seed
   Support/Money.php                   Integer-paise arithmetic
   Support/CashDrawer.php              Change split into notes and coins
 resources/js/
@@ -693,6 +738,8 @@ resources/js/
   components/deleteOrder.js           Delete confirmation
   components/restockProduct.js        Restock dialog
   stores/toasts.js                    Shared success and failure notifications
+  stores/theme.js                     Light/dark choice, remembered per browser
+resources/css/app.css                 Design tokens for both themes, and the component classes
 resources/views/
   components/                         Blade UI kit: field, stat, stock-badge, empty-state,
                                       modal, pagination, trend

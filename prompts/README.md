@@ -123,12 +123,30 @@ Two things I pushed back on in the generated shape:
   does not exist in SQLite at all, so the whole dashboard 500'd under the test suite. The
   expressions are chosen per driver now.
 
-## 12. Comments
+## 12. Theme, shell and setup
+
+Asked for a stronger theme, a proper header and footer, easy setup and a responsive check.
+
+The theme went to a deep azure blue with a dark mode. The first pass at dark mode came back as
+`dark:` variants sprinkled across every view, which is how the two themes drift apart — one gets
+updated and the other does not. Rewrote it as semantic tokens (`surface`, `line`, `ink`, `body`,
+`muted`, and the status colours) declared once and redeclared under `.dark`, so no view knows which
+theme it is in.
+
+That surfaced a subtlety worth recording: `warn` has to be dark enough to read as text on a pale
+card, and a solid bar or legend dot wants the same hue much lighter. Using one value for both made
+the amber segment of the stock-health bar render brown. They are separate tokens now.
+
+Setup became `composer setup`, which runs an `app:install` command that copies the env file,
+generates the key, **creates the database if it is missing**, migrates and seeds — and skips
+whatever is already done, so it is safe to re-run.
+
+## 13. Comments
 
 Asked for the code to be stripped of comments and the reasoning moved into the README, next to the
 decision it explains. Docblocks were kept only where they carry types.
 
-## 13. Bugs the assistant introduced, and how they were caught
+## 14. Bugs the assistant introduced, and how they were caught
 
 Worth recording, since the brief asks how well the tooling was used rather than whether it was:
 
