@@ -133,12 +133,22 @@ class OrderService
         return $order->fresh(['customer', 'items.product']);
     }
 
+    /**
+     * @throws ValidationException
+     */
     private function resolveCustomer(NewOrderData $data): Customer
     {
         $customer = Customer::firstOrNew(['email' => $data->customerEmail]);
+        $name = trim((string) $data->customerName);
 
-        if ($data->customerName !== null && $data->customerName !== '') {
-            $customer->name = $data->customerName;
+        if ($name !== '') {
+            $customer->name = $name;
+        }
+
+        if (! $customer->exists && $customer->name === null) {
+            throw ValidationException::withMessages([
+                'customer.name' => 'A name is required the first time we bill this email.',
+            ]);
         }
 
         $customer->save();

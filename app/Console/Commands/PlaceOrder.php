@@ -8,6 +8,7 @@ use App\Exceptions\InsufficientStockException;
 use App\Services\OrderService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class PlaceOrder extends Command
 {
@@ -21,6 +22,8 @@ class PlaceOrder extends Command
     protected $description = 'Record a counter sale without going through the HTTP layer';
 
     public const EXIT_SHORT_ON_STOCK = 4;
+
+    public const EXIT_INVALID = 5;
 
     public function handle(OrderService $orders): int
     {
@@ -47,6 +50,13 @@ class PlaceOrder extends Command
                 lines: $lines,
                 amountTendered: $this->option('tendered') === null ? null : (float) $this->option('tendered'),
             ));
+        } catch (ValidationException $e) {
+            $this->output->writeln(json_encode([
+                'status' => 'rejected',
+                'errors' => $e->errors(),
+            ], JSON_THROW_ON_ERROR));
+
+            return self::EXIT_INVALID;
         } catch (InsufficientStockException $e) {
             $this->line(json_encode(['status' => 'short', 'shortages' => $e->shortages]));
 

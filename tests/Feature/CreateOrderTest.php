@@ -2,13 +2,17 @@
 
 namespace Tests\Feature;
 
+use App\Data\NewOrderData;
+use App\Data\OrderLineData;
 use App\Jobs\SendOrderConfirmation;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\StockMovement;
+use App\Services\OrderService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class CreateOrderTest extends TestCase
@@ -144,6 +148,47 @@ class CreateOrderTest extends TestCase
             'customer' => ['email' => 'stranger@example.com'],
             'items' => [['product_id' => $product->id, 'quantity' => 1]],
         ])->assertStatus(422)->assertJsonValidationErrors('customer.name');
+    }
+
+    /**
+     * The form request carries the same rule, but the command line and any other
+     * caller go straight to the service, so the service has to hold it too.
+     */
+    public function test_the_service_itself_refuses_a_new_customer_with_no_name(): void
+    {
+        $product = Product::factory()->create(['stock_on_hand' => 10]);
+
+        $this->expectException(ValidationException::class);
+
+        try {
+            app(OrderService::class)->place(new NewOrderData(
+                customerEmail: 'stranger@example.com',
+                customerName: null,
+                lines: collect([new OrderLineData($product->id, 1)]),
+                amountTendered: null,
+            ));
+        } finally {
+            $this->assertDatabaseCount('customers', 0);
+            $this->assertDatabaseCount('orders', 0);
+            $this->assertSame(10, $product->refresh()->stock_on_hand);
+        }
+    }
+
+    public function test_the_service_keeps_the_name_already_on_file(): void
+    {
+        $customer = Customer::factory()->create(['email' => 'thomas@example.com', 'name' => 'Thomas Verghese']);
+        $product = Product::factory()->create(['stock_on_hand' => 10]);
+
+        Queue::fake();
+
+        app(OrderService::class)->place(new NewOrderData(
+            customerEmail: 'thomas@example.com',
+            customerName: null,
+            lines: collect([new OrderLineData($product->id, 1)]),
+            amountTendered: null,
+        ));
+
+        $this->assertSame('Thomas Verghese', $customer->refresh()->name);
     }
 
     public function test_it_merges_repeated_lines_for_the_same_product(): void
