@@ -13,7 +13,7 @@
     ];
 
     $mark = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">'
-        .'<rect width="32" height="32" rx="7" fill="#6d3fe0"/>'
+        .'<rect width="32" height="32" rx="7" fill="#274a94"/>'
         .'<path d="M8 9h2l.6 2.6M12 20h9l2.6-8H10.6M12 20l-2-8m2 8-1.6 4.4h11" fill="none" stroke="#fff" '
         .'stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 @endphp
@@ -25,7 +25,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="description" content="Store Order &amp; Inventory Mini-System">
-    <meta name="theme-color" content="#f7f6f4">
+    <meta name="theme-color" content="#f3f5f8">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>@yield('title', 'Counter') &middot; {{ config('app.name') }}</title>
 

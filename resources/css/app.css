@@ -14,34 +14,34 @@
         'Helvetica Neue', Arial, sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
-    --color-brand-50: oklch(0.972 0.017 292);
-    --color-brand-100: oklch(0.942 0.036 292);
-    --color-brand-200: oklch(0.888 0.068 292);
-    --color-brand-300: oklch(0.803 0.115 291);
-    --color-brand-400: oklch(0.694 0.165 290);
-    --color-brand-500: oklch(0.602 0.203 289);
-    --color-brand-600: oklch(0.528 0.219 288);
-    --color-brand-700: oklch(0.457 0.196 288);
-    --color-brand-800: oklch(0.388 0.158 288);
-    --color-brand-900: oklch(0.331 0.121 288);
-    --color-brand-950: oklch(0.228 0.082 289);
+    --color-brand-50: oklch(0.968 0.014 258);
+    --color-brand-100: oklch(0.934 0.031 258);
+    --color-brand-200: oklch(0.874 0.058 258);
+    --color-brand-300: oklch(0.774 0.094 257);
+    --color-brand-400: oklch(0.646 0.129 259);
+    --color-brand-500: oklch(0.524 0.148 262);
+    --color-brand-600: oklch(0.436 0.147 264);
+    --color-brand-700: oklch(0.366 0.126 265);
+    --color-brand-800: oklch(0.306 0.101 266);
+    --color-brand-900: oklch(0.262 0.079 266);
+    --color-brand-950: oklch(0.185 0.055 266);
 
-    /* Warm greys. Against a violet brand they read softer than the usual blue-grey. */
-    --color-canvas: oklch(0.973 0.004 85);
+    /* Cool greys, carrying a trace of the same blue so nothing sits beside it grey. */
+    --color-canvas: oklch(0.972 0.005 250);
     --color-surface: oklch(1 0 0);
-    --color-raised: oklch(0.985 0.003 85);
-    --color-sunken: oklch(0.958 0.005 85);
-    --color-line: oklch(0.923 0.005 85);
-    --color-line-strong: oklch(0.868 0.008 85);
+    --color-raised: oklch(0.985 0.004 250);
+    --color-sunken: oklch(0.957 0.007 250);
+    --color-line: oklch(0.922 0.008 250);
+    --color-line-strong: oklch(0.867 0.011 250);
 
-    --color-ink: oklch(0.252 0.024 290);
-    --color-body: oklch(0.438 0.019 290);
-    --color-muted: oklch(0.578 0.015 290);
-    --color-faint: oklch(0.7 0.012 290);
+    --color-ink: oklch(0.245 0.028 262);
+    --color-body: oklch(0.432 0.022 260);
+    --color-muted: oklch(0.572 0.018 258);
+    --color-faint: oklch(0.695 0.014 258);
 
-    --color-shell: oklch(0.218 0.048 289);
-    --color-shell-ink: oklch(0.98 0.006 290);
-    --color-shell-line: oklch(0.33 0.055 289);
+    --color-shell: oklch(0.192 0.049 264);
+    --color-shell-ink: oklch(0.98 0.006 250);
+    --color-shell-line: oklch(0.31 0.06 264);
 
     /* Status colours at text weight, dark enough to read on a pale card. */
     --color-success: oklch(0.52 0.13 155);
