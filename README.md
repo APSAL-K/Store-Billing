@@ -7,7 +7,7 @@ Built as a take-home assignment for Mallow Technologies. The JSON API is the par
 specifies; the screens on top of it use that same API.
 
 **Laravel 12** · **PHP 8.4** · **MySQL 8+ / MariaDB** (PostgreSQL works unchanged) ·
-**Blade + Alpine.js + Tailwind 4** · **67 tests**
+**Blade + Alpine.js + Tailwind 4** · **84 tests**
 
 ![Dashboard](docs/screenshots/01-dashboard.png)
 
@@ -86,14 +86,21 @@ Confirmation emails do not go over SMTP. `MAIL_MAILER=log` writes each rendered 
 
 **Inventory**
 
-- Catalogue with stock levels, search and a low-stock filter
+- Add, edit and delete a product from the catalogue
+- Stock levels with search and a low-stock filter
 - **Restock** any product, recorded as its own movement
 - Per-product **stock ledger**: every change to stock with the bill that caused it
 
 **Dashboard**
 
-- Today's revenue, units and tax; a fourteen-day revenue trend
-- Best sellers, recent bills, and what needs reordering
+- Revenue, bills, average bill and tax for today, each against yesterday
+- Fourteen-day revenue trend and a busiest-hours breakdown over the last month
+- Retail value of the shelves, split into healthy, low and out of stock
+- Best sellers, top customers, recent bills, and a live feed of stock movements
+
+**Everywhere**
+
+- Every listing paginates, with a page-size selector that keeps the filters you set
 
 **Customers**
 
@@ -180,18 +187,32 @@ Add, edit and delete from the list.
 
 ### Inventory
 
+The catalogue is managed here: add a product, edit it, restock it, or take it off the shelf.
+
 ![Inventory](docs/screenshots/16-inventory.png)
+
+![Product form](docs/screenshots/17-product-form.png)
+
+Stock is deliberately **not** editable on that form. It moves when a bill is raised, edited or
+deleted, and when a product is restocked — every change writes a ledger row, and letting someone
+type over the number would put the shelf and the ledger out of step with nothing explaining it.
+
+![Restock](docs/screenshots/18-restock.png)
 
 Every product carries its own ledger. Sales, edits, deletions and restocks all land here with the
 balance they left behind.
 
-![Stock ledger](docs/screenshots/17-stock-ledger.png)
-
-![Restock](docs/screenshots/18-restock.png)
+![Stock ledger](docs/screenshots/19-stock-ledger.png)
 
 ### On a phone
 
-<img src="docs/screenshots/19-mobile-pos.png" width="320" alt="The counter screen on a phone">
+Every screen works down to 390px. Wide tables scroll inside their own container so the page itself
+never scrolls sideways.
+
+<p>
+<img src="docs/screenshots/20-mobile-dashboard.png" width="300" alt="The dashboard on a phone">
+<img src="docs/screenshots/21-mobile-pos.png" width="300" alt="The counter screen on a phone">
+</p>
 
 ---
 
@@ -277,15 +298,25 @@ curl -X DELETE http://localhost:8000/api/orders/13 -H 'Accept: application/json'
 `204`. Every unit goes back on the shelf and the bill is soft deleted. Deleting a deleted bill
 returns `409` rather than crediting the stock twice.
 
-### Customers
+### Customers and products
 
 ```
-GET    /api/customers            list, with ?search=
-POST   /api/customers            create
-PUT    /api/customers/{customer} update
-DELETE /api/customers/{customer} delete
+GET    /api/customers                    list, with ?search=
+POST   /api/customers                    create
+PUT    /api/customers/{customer}         update
+DELETE /api/customers/{customer}         delete
 GET    /api/customers/lookup?email=
+
+GET    /api/products                     list, with ?search=
+POST   /api/products                     create
+PUT    /api/products/{product}           update
+DELETE /api/products/{product}           delete
+POST   /api/products/{product}/restock   add stock
 ```
+
+`stock_on_hand` is accepted when a product is **created** — that is its opening balance — and
+rejected on update. Stock afterwards only moves through a bill or a restock, so the ledger always
+explains the number on the shelf.
 
 ```bash
 curl -X POST http://localhost:8000/api/customers \
@@ -324,12 +355,10 @@ curl -X POST http://localhost:8000/api/products/2/restock \
   -d '{ "quantity": 50, "note": "Supplier invoice 4471" }'
 ```
 
-### Supporting endpoints
+### Pagination
 
-`GET /api/products` backs the picker on the counter screen and accepts `?search=`.
-
-`GET /api/customers/lookup?email=` returns a customer and their bill count, or `404`. The counter
-screen uses it to fill in the name of a returning customer; the `404` is the signal to ask for one.
+Every listing takes `?page=` and `?per_page=` (10, 25, 50 or 100; anything else falls back to 10).
+Filters are carried across pages, so a page-two link keeps the search you typed.
 
 ---
 
@@ -462,7 +491,7 @@ php artisan test
 ```
 
 ```
-Tests:  67 passed (286 assertions)
+Tests:  84 passed (373 assertions)
 ```
 
 The suite runs on in-memory SQLite and takes a few seconds. Beyond the happy path it covers the
@@ -497,11 +526,23 @@ cases I would expect to break in production.
 - a deleted customer disappears from the list and from the counter lookup, while their bills stay
   readable with their name on them
 
+**Products**
+- created, renamed, repriced and deleted through the API, with codes upper-cased and kept unique
+- **repricing a product does not touch bills already raised** — the order line keeps the price it
+  was sold at
+- an update cannot set stock directly; that is what a restock or a bill is for
+- a deleted product leaves the catalogue and cannot be sold again, while the bills carrying it stay
+  readable
+
+**Pagination**
+- every listing paginates, on its own page size, with filters carried across pages
+- an unsupported `per_page` falls back to the default rather than erroring
+
 **Inventory and reads**
 - the low-stock threshold resolving through all three of its levels
 - a restock lifts a product back out of the low-stock list, and its balance is recorded correctly
 - the customer lookup returns a clean `404` for an unknown email
-- the dashboard leaves deleted bills out of revenue
+- the dashboard reports today against yesterday, and leaves deleted bills out of revenue
 - each screen is asserted on the data it puts in front of the user, not just a `200`
 
 **Concurrency**
@@ -522,7 +563,7 @@ cases I would expect to break in production.
 | 3. Customer order history by email | [`OrderController@index`](app/Http/Controllers/Api/OrderController.php) |
 | 4. Low-stock endpoint, configurable threshold | [`ProductController@lowStock`](app/Http/Controllers/Api/ProductController.php), [`config/inventory.php`](config/inventory.php) |
 | 5. Queued job on order creation | [`SendOrderConfirmation`](app/Jobs/SendOrderConfirmation.php) |
-| 6. Feature and unit tests with edge cases | [`tests`](tests) — 67 tests |
+| 6. Feature and unit tests with edge cases | [`tests`](tests) — 84 tests |
 | 7. Safe under concurrent requests | [Concurrency](#no-overselling-under-concurrent-requests), [`ConcurrentOrderTest`](tests/Feature/ConcurrentOrderTest.php) |
 | Eloquent relationships, migrations, form-request validation | [`app/Models`](app/Models), [`app/Http/Requests`](app/Http/Requests) |
 | Thin controllers, logic in services | [`app/Services`](app/Services) — controllers validate, delegate, return a resource |
@@ -594,6 +635,17 @@ simulate sending a confirmation, and explicitly allows a log entry. Pulling in a
 mailer that never reaches SMTP seemed like weight without value, so the job renders a Markdown
 mailable and the bill screen is print-styled instead.
 
+**Stock is never typed in, only moved.** The product form takes an opening balance when a product
+is created and refuses `stock_on_hand` on update. Every later change goes through a bill or a
+restock so there is always a ledger row explaining the number. A form that let someone overwrite it
+would silently break the one guarantee the ledger exists to give.
+
+**The dashboard's date grouping is written per driver.** `DATE()` and `HOUR()` are not portable —
+`HOUR()` does not exist in SQLite or Postgres at all — so
+[`DashboardMetrics`](app/Services/DashboardMetrics.php) picks the expression for the connection in
+use. Grouping in PHP instead would have been simpler and would have meant pulling every order in
+the window into memory to draw one chart.
+
 **There is no authentication, so there are no `users` or `sessions` tables.** The default Laravel
 scaffolding for both was removed rather than left sitting unused in a schema the brief asked to be
 normalised; sessions use the file driver. Adding auth later means adding those back, which is a
@@ -630,18 +682,20 @@ app/
   Services/OrderTotals.php            Line pricing and tax rounding
   Services/InventoryService.php       Restocking
   Services/DashboardMetrics.php       Dashboard queries, kept out of the controller
+  Support/PerPage.php                 The page sizes the listings will accept
   Support/Money.php                   Integer-paise arithmetic
   Support/CashDrawer.php              Change split into notes and coins
 resources/js/
   money.js                            Mirrors Money and CashDrawer so totals stay live on screen
   components/orderForm.js             Counter screen: customer, product cards, totals, validation
   components/customerForm.js          Customer add, edit and delete
+  components/productForm.js           Product add, edit, restock and delete
   components/deleteOrder.js           Delete confirmation
   components/restockProduct.js        Restock dialog
   stores/toasts.js                    Shared success and failure notifications
 resources/views/
   components/                         Blade UI kit: field, stat, stock-badge, empty-state,
-                                      modal, pagination
+                                      modal, pagination, trend
   layouts/app.blade.php               Shell, navigation, toast outlet
   dashboard/ billing/ orders/ customers/ products/
 tests/Feature/ConcurrentOrderTest.php Six real processes against one product

@@ -108,12 +108,27 @@ Asked for the screens a counter actually needs beyond the wireframe: a dashboard
 and a per-product stock ledger. The ledger was the point of `stock_movements` all along — this is
 where the table stops being schema and starts being a feature.
 
-## 11. Comments
+## 11. Products, and a more elaborate dashboard
+
+Asked for product CRUD in the UI and for the dashboard to carry more. The dashboard grew a
+day-against-yesterday comparison, a busiest-hours chart, the retail value of the shelves split by
+health, top customers, and a live stock-movement feed.
+
+Two things I pushed back on in the generated shape:
+
+- The product form originally let stock be typed in on edit. That breaks the one guarantee the
+  ledger gives — that every number on the shelf has a movement explaining it. Stock is now an
+  opening balance at creation and read-only afterwards.
+- The dashboard queries came back using `DATE()` and `HOUR()`. Neither is portable, and `HOUR()`
+  does not exist in SQLite at all, so the whole dashboard 500'd under the test suite. The
+  expressions are chosen per driver now.
+
+## 12. Comments
 
 Asked for the code to be stripped of comments and the reasoning moved into the README, next to the
 decision it explains. Docblocks were kept only where they carry types.
 
-## 12. Bugs the assistant introduced, and how they were caught
+## 13. Bugs the assistant introduced, and how they were caught
 
 Worth recording, since the brief asks how well the tooling was used rather than whether it was:
 
@@ -130,5 +145,15 @@ Worth recording, since the brief asks how well the tooling was used rather than 
 - Blade's `@json` directive cannot parse a multi-line array literal written inline in an attribute.
   It broke the page silently at compile time, twice, in two different files. The fix both times was
   to build the array in PHP first and pass the variable.
+
+- The dashboard charts rendered as empty boxes twice: once because a percentage height sat inside a
+  container with no height, and once because `bg-gradient-to-t` is Tailwind v3 syntax and v4 wants
+  `bg-linear-to-t`. Neither failed a test; both were obvious in a screenshot.
+- Adding soft deletes to products surfaced a real hole: the order validation used
+  `exists:products,id`, which happily matches a soft-deleted row, so a discontinued product could
+  still be sold. Caught by writing the test for it.
+- The `orders:place` command bypassed the form request, so billing an unknown email with no name
+  died on a raw SQL error instead of a validation message. The rule belonged in the service, where
+  both entry points reach it — the same argument as the stock check.
 
 The general lesson: the tests catch logic, the browser catches everything else. Both were needed.
