@@ -1,0 +1,198 @@
+# How this was built with AI
+
+The brief invites AI-assisted development and asks to see how well the tools were used rather than
+whether they were used at all. This is that record.
+
+- **[`PROMPTS.md`](PROMPTS.md)** — every prompt I sent, in order and in English, with what each
+  one produced. I type in Tanglish, so the screenshots read that way and this file is the written-out
+  version.
+- **[`screenshots/`](screenshots/)** — the same prompts captured from the editor panel.
+- **This file** — what came back, what I kept, what I sent back for another pass, and the bugs the
+  assistant wrote that I had to catch.
+
+Tool: **Claude Code** (Opus 5) in the VS Code panel. Roughly a dozen prompts over the build; the
+useful ones were the corrections, not the requests.
+
+## 1. Reading the brief
+
+Asked the assistant to read `Laravel_Developer_Mini_Task.pdf`, including the embedded wireframe
+image, and summarise the functional requirements and submission checklist.
+
+## 2. Deciding the shape before writing code
+
+Asked what the brief actually pins down versus leaves open. Two things came out of this that
+changed the plan:
+
+- The brief never names a database. Migrations and seeders *are* the deliverable, so the reviewer
+  runs `migrate --seed` against their own server. MySQL was chosen for the row-level locking the
+  concurrency requirement needs.
+- No deployment is asked for. The submission is a repo, a README, prompt screenshots and a narrated
+  recording. Time went into the concurrency work and the tests instead of hosting.
+
+## 3. Schema
+
+Asked for a normalised schema for products, customers, orders and order lines. Two changes made on
+top of the first draft:
+
+- `order_items` snapshots `unit_price` and `tax_percentage` at the time of sale, so repricing a
+  product does not rewrite historical bills.
+- Added `stock_movements` as the supporting table the brief invites, giving an append-only audit
+  trail behind `products.stock_on_hand`.
+
+The first draft also stored a `reference` column on `orders`. Dropped it — generating a second
+unique value safely under concurrency is real work for something that is just a formatting of the
+primary key, so it became an accessor.
+
+## 4. Order creation and the concurrency requirement
+
+Asked for a service that validates stock, prices lines including tax, deducts stock and returns the
+order, safe under concurrent requests.
+
+The first version used `lockForUpdate()` alone. Two things were added:
+
+- Products are locked **ordered by id**, so two overlapping orders holding the same products cannot
+  deadlock against each other.
+- The decrement is conditional (`where('stock_on_hand', '>=', $qty)`) with the affected row count
+  checked, as a second line of defence for drivers without row locking.
+
+Also moved the stock check out of the `FormRequest`. Availability can change between validation and
+the write, so the only check worth trusting is the one holding the lock.
+
+## 5. Money
+
+Asked how to avoid float drift on totals and tax. Settled on integer paise inside
+`App\Support\Money`, with tax applied and rounded **per line** rather than on the subtotal, so the
+printed lines add up to the printed total.
+
+## 6. Tests
+
+Asked for coverage beyond the happy path. The insufficient-stock test was tightened to assert that
+a rejected order leaves *nothing* behind — no order row, no stock movement, no queued job, and the
+lines that could have been filled still on the shelf.
+
+For the concurrency requirement, a single-process test cannot prove anything, so the test launches
+six real `php artisan orders:place` processes at one product with two units in stock. It was then
+verified in the other direction: with the guards removed from `OrderService` the test fails, which
+is the only evidence that it is testing something.
+
+## 7. UI
+
+Asked for the counter screen from the wireframe: customer fields, product rows with live line
+totals, the low-stock panel, and the cash-tendered and balance-to-return block. Kept to Blade plus
+plain JavaScript posting to the same `/api/orders` endpoint — nothing here needed a framework.
+
+## 8. Editing and deleting a bill
+
+Asked for edit and delete on a bill. The first version hard-deleted the order row, which throws away
+the record of a transaction that really happened and leaves the stock ledger pointing at nothing.
+It became a soft delete instead: stock returned, record kept, still readable under a filter.
+
+An intermediate version called this "voiding". That is the accounting word for it, but nobody at a
+counter says it, so the whole thing went back to plain "delete" with the soft delete doing the work
+underneath.
+
+Every table then got a `deleted_at`. That flushed out a real problem: `order_items` has a unique
+index on `(order_id, product_id)`, and a soft-deleted row still occupies it, so replacing lines
+during an edit would fail the second time the same product appeared. Replacing lines uses
+`forceDelete()` for that reason.
+
+The edit was reworked too. The first version deleted the old lines and took stock for the new ones,
+which double-counts anything that appears in both. It now computes **one delta per product** across
+the union of the old and new line sets and applies it inside the same locked transaction as a sale.
+
+## 9. Rebuilding the counter screen
+
+The first counter screen used a type-ahead that added one line at a time, which reads well in a
+demo and badly at a till. It became a card grid: the whole catalogue visible, search filtering it
+live, one tap per unit, and the quantity shown on the card itself.
+
+The customer field changed the same way — a dropdown over everyone on file, with adding a new one
+folded into the same control rather than a separate page. Payment moved from the side column to the
+bottom of the same column, so the bill reads top to bottom in the order it is actually built:
+customer, items, payment.
+
+## 10. Extra screens
+
+Asked for the screens a counter actually needs beyond the wireframe: a dashboard, a customer list,
+and a per-product stock ledger. The ledger was the point of `stock_movements` all along — this is
+where the table stops being schema and starts being a feature.
+
+## 11. Products, and a more elaborate dashboard
+
+Asked for product CRUD in the UI and for the dashboard to carry more. The dashboard grew a
+day-against-yesterday comparison, a busiest-hours chart, the retail value of the shelves split by
+health, top customers, and a live stock-movement feed.
+
+Two things I pushed back on in the generated shape:
+
+- The product form originally let stock be typed in on edit. That breaks the one guarantee the
+  ledger gives — that every number on the shelf has a movement explaining it. Stock is now an
+  opening balance at creation and read-only afterwards.
+- The dashboard queries came back using `DATE()` and `HOUR()`. Neither is portable, and `HOUR()`
+  does not exist in SQLite at all, so the whole dashboard 500'd under the test suite. The
+  expressions are chosen per driver now.
+
+## 12. Theme, shell and setup
+
+Asked for a stronger theme, a proper header and footer, easy setup and a responsive check.
+
+## 13. Palette, again
+
+Dark mode came out and the theme changed twice more — violet on warm grey, then a deep navy. Each
+of those was one block of CSS and nothing else, which is the whole return on the token discipline
+below.
+
+## 12b. What the palette work taught
+
+The palette changed twice — azure with a dark mode first, then a violet-on-warm-grey scheme in
+light only. Both changes were one block of CSS, because the first pass at dark mode had forced a
+useful discipline: no view names a colour, everything resolves through a semantic token
+(`surface`, `line`, `ink`, `body`, `muted`, and the status colours).
+
+The first attempt at dark mode had been `dark:` variants sprinkled across every view, which is how
+two themes drift apart — one gets updated and the other does not. Tokens replaced that. Dark mode
+was later dropped, but the tokens stayed, and they are the reason repainting the whole application
+costs nothing.
+
+One subtlety worth recording: `warn` has to be dark enough to read as text on a pale card, and a
+solid bar or legend dot wants the same hue much lighter. Using one value for both made the amber
+segment of the stock-health bar render brown. They are separate tokens now.
+
+Setup became `composer setup`, which runs an `app:install` command that copies the env file,
+generates the key, **creates the database if it is missing**, migrates and seeds — and skips
+whatever is already done, so it is safe to re-run.
+
+## 13. Comments
+
+Asked for the code to be stripped of comments and the reasoning moved into the README, next to the
+decision it explains. Docblocks were kept only where they carry types.
+
+## 14. Bugs the assistant introduced, and how they were caught
+
+Worth recording, since the brief asks how well the tooling was used rather than whether it was:
+
+- `InventoryService::restock()` first called `$model->increment()` and then computed
+  `balance_after` from the same model — Eloquent had already updated the attribute in memory, so
+  every restock recorded double the balance. Caught by a test asserting the exact ledger row.
+- The counter form lost its `novalidate` attribute during a rewrite, so the browser's own bubble
+  fired before the styled validation could. Caught while capturing the validation screenshot.
+- The dashboard chart rendered a percentage height inside a container with no height, so the bars
+  were invisible. Caught in a browser screenshot, not by any test.
+
+- A blanket find-and-replace while renaming "void" to "delete" rewrote PHP `: void` return types
+  into `: delete`. Caught immediately by the test suite.
+- Blade's `@json` directive cannot parse a multi-line array literal written inline in an attribute.
+  It broke the page silently at compile time, twice, in two different files. The fix both times was
+  to build the array in PHP first and pass the variable.
+
+- The dashboard charts rendered as empty boxes twice: once because a percentage height sat inside a
+  container with no height, and once because `bg-gradient-to-t` is Tailwind v3 syntax and v4 wants
+  `bg-linear-to-t`. Neither failed a test; both were obvious in a screenshot.
+- Adding soft deletes to products surfaced a real hole: the order validation used
+  `exists:products,id`, which happily matches a soft-deleted row, so a discontinued product could
+  still be sold. Caught by writing the test for it.
+- The `orders:place` command bypassed the form request, so billing an unknown email with no name
+  died on a raw SQL error instead of a validation message. The rule belonged in the service, where
+  both entry points reach it — the same argument as the stock check.
+
+The general lesson: the tests catch logic, the browser catches everything else. Both were needed.

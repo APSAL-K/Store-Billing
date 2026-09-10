@@ -590,7 +590,7 @@ cases I would expect to break in production.
 | Thin controllers, logic in services | [`app/Services`](app/Services) — controllers validate, delegate, return a resource |
 | README with setup and assumptions | this file, plus `composer setup` |
 | Prompt log | [`prompts/`](prompts/) |
-| Screen recording | script in [`docs/RECORDING-SCRIPT.md`](docs/RECORDING-SCRIPT.md) |
+| Screen recording | [`docs/videos/`](docs/videos/) — narration script and a silent reference capture |
 
 ---
 
@@ -732,6 +732,21 @@ resources/views/
   dashboard/ billing/ orders/ customers/ products/
 tests/Feature/ConcurrentOrderTest.php Six real processes against one product
 ```
+
+---
+
+## The walkthrough
+
+[`docs/videos/`](docs/videos/) holds two things:
+
+- [`RECORDING-SCRIPT.md`](docs/videos/RECORDING-SCRIPT.md) — the running order and narration for
+  the walkthrough, section by section.
+- `store-billing-walkthrough-silent.mp4` — a silent capture of that same route through the running
+  application, 2½ minutes of real clicks.
+
+**The silent file is working material, not the submission.** The brief asks for a narrated
+walkthrough and says plainly that a silent capture is not sufficient; the narrated recording is
+sent separately. This one exists so the route could be rehearsed and timed.
 
 ---
 
