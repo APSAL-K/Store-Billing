@@ -3,8 +3,9 @@
 The brief invites AI-assisted development and asks to see how well the tools were used rather than
 whether they were used at all. This is that record.
 
-- **[`PROMPTS.md`](PROMPTS.md)** — every prompt I sent, verbatim and in order, with an English
-  gloss and what each one produced.
+- **[`PROMPTS.md`](PROMPTS.md)** — every prompt I sent, in order and in English, with what each
+  one produced. I type in Tanglish, so the screenshots read that way and this file is the written-out
+  version.
 - **[`screenshots/`](screenshots/)** — the same prompts captured from the editor panel.
 - **This file** — what came back, what I kept, what I sent back for another pass, and the bugs the
   assistant wrote that I had to catch.

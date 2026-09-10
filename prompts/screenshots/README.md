@@ -3,8 +3,8 @@
 The brief asks for screenshots of the actual prompts, taken from the chat or IDE panel. Drop them
 in this folder.
 
-The text of every prompt is already written out verbatim in [`../PROMPTS.md`](../PROMPTS.md); these
-images are the evidence that they were really typed into a tool.
+Every prompt is written out in English in [`../PROMPTS.md`](../PROMPTS.md). These images are the
+literal record — the prompts as they were typed, in Tanglish.
 
 ## What to capture
 

@@ -1,14 +1,14 @@
 # Prompt log
 
-Every prompt I gave the assistant while building this, verbatim and in order.
+Every prompt I gave the assistant while building this, in order.
 
-They are written in Tanglish (Tamil in Latin script, mixed with English), which is how I type. Each
-one has a short English gloss underneath so the intent is readable either way. The typos are left
-in — this is what was actually sent, not a tidied-up version.
+I type to the assistant in Tanglish — Tamil in Latin script, mixed with English — so the prompts in
+the [screenshots](screenshots/) read that way. They are written out here in English, which is the
+same request in a form a reader can follow. The screenshots are the literal record; this file is
+the readable one.
 
-Screenshots of these same prompts as they appear in the editor panel are in
-[`screenshots/`](screenshots/). The commentary on what came back, what I kept and what I sent back
-for another pass is in [`README.md`](README.md).
+Underneath each prompt is what came back and what I did with it. The commentary on where I sent
+work back for another pass, and on the bugs the assistant wrote, is in [`README.md`](README.md).
 
 Tool used: **Claude Code** (Opus 5) in the VS Code panel.
 
@@ -16,47 +16,44 @@ Tool used: **Claude Code** (Opus 5) in the VS Code panel.
 
 ### 1 — The brief
 
-> bro unnoda document read pandra skill ah use panni entha document la ennod erukko apdiyee pannu
-> broo professtional and ai pannathu nu theriyaama pannanum bro
+> Read the attached document and build exactly what it asks for. It should look professional, and
+> it should not look like it was generated.
 
-*Read the PDF brief and build exactly what it asks for. Make it professional, and don't let it look
-AI-generated.*
-
-The assistant read `Laravel_Developer_Mini_Task.pdf`, extracted the wireframe image out of it, and
-came back with the scope plus the decisions the brief leaves open.
+The assistant read `Laravel_Developer_Mini_Task.pdf`, pulled the wireframe image out of it, and
+came back with the scope plus the decisions the brief deliberately leaves open — database, whether
+to build a UI, how to read the wireframe's arithmetic.
 
 ---
 
 ### 2 — Database choice
 
-> bro avanga database nu ethavathu ketrukkangala bro
-> apdi na ennoda suggetion vanthu supabase la erukkura database ha use pannikkalam bro
+> Does the brief ask for a specific database? If it does not, I would like to use a hosted Postgres
+> database on Supabase.
 
-*Did they ask for a specific database? If not, my suggestion is to use the Supabase database.*
-
-Answer: the brief names no database. It asks for migrations and seeders, nothing more.
+Answer: the brief names no database at all. It asks for a normalised schema, migrations and
+seeders, and says nothing about where they run. So the choice is ours to make and to document.
 
 ---
 
 ### 3 — Hosting
 
-> bro local bro db eppo avangalukku kudutha mudiyathu le local la thaane run panna mudiyum namma db
-> oda vercel la deploye panni thaane kudukkanum bro ? apdina supabase la postgresSql thaane bro crt ?
+> We cannot hand them our local database — surely we have to deploy it for them to see it? And
+> Supabase is PostgreSQL, correct?
 
-*We can't hand them a local database — we'd have to deploy it on Vercel, right? And Supabase is
-PostgreSQL, correct?*
+Answer: the brief asks for a repository, a README, a prompt log and a screen recording. There is no
+live URL in the submission list. The reviewer clones the repo and runs `migrate --seed` against
+their own server, which means the migrations *are* the database as far as the submission goes.
 
-Answer: the brief asks for a repo, a README, a prompt log and a recording — no deployment. The
-reviewer runs `migrate --seed` on their own machine, so the migrations *are* the database. Supabase
-is Postgres, yes, but Vercel does not run PHP natively and cannot hold a queue worker.
+Supabase is Postgres, yes. But Vercel does not run PHP natively and cannot hold a long-lived queue
+worker, so it is the wrong host for requirement 5.
 
-Settled on: MySQL for development, Postgres documented as working unchanged, SQLite for the tests.
+Settled on MySQL for development, Postgres documented as working unchanged, SQLite for the tests.
 
 ---
 
 ### 4 — Connecting MySQL
 
-> bro my sql ha connect pannu bro
+> Connect the application to MySQL using these settings:
 >
 > ```
 > DB_CONNECTION=mysql
@@ -67,137 +64,94 @@ Settled on: MySQL for development, Postgres documented as working unchanged, SQL
 > DB_PASSWORD=C0mplex
 > ```
 
-*Connect MySQL, here are the settings.*
-
-`DB_HOST` was a URL, which is not what that field takes. The assistant probed the machine, found
-MySQL running in Docker on 3306 with Adminer on 1414, and set the host to `127.0.0.1`.
+`DB_HOST` had been given as a URL, which is not what that field takes. The assistant probed the
+machine, found MySQL running in Docker on 3306 with Adminer on 1414, and corrected the host to
+`127.0.0.1`.
 
 ---
 
 ### 5 — The interface
 
-> bro ennaku ui super ah erukkanum bro
-> vera lavel ah pannu bro tabs vai haeader and nav bar ellam professtion billing application maari
-> podu bro
-> ui la inputs ellame super pannu bro select option search and select entha maari ellame pannu bro
-> and inpute validation ellame pannu properly errors and success ellame show pannu bro and
-> entha project ha paathathu impressive ui and clean articute la erukkanum bro
+> The interface needs to be excellent — a level above the usual. Give it a proper header, navigation
+> and tabs, the way a real billing application looks. Make every input good, including searchable
+> select fields. Handle input validation properly, showing both errors and success states. Anyone
+> looking at this project should find the interface impressive and the architecture clean.
 
-*I want the UI to be excellent. Next level. Tabs, header, nav bar — like a professional billing
-application. Make every input good: searchable select options and so on. Do the input validation
-properly, showing errors and successes. Looking at this project it should be impressive UI and
-clean architecture.*
-
-Produced the shell, the navigation, the type-ahead product picker, live totals and two-sided
-validation.
+Produced the application shell, the navigation, the type-ahead product picker, live totals and
+validation on both the client and the server.
 
 ---
 
 ### 6 — Covering the whole brief
 
-> bro bill edit and and delete also panniru bro first avanga document la sonna
-> scop and functional requestment, what we're looking for, what to submit,
-> ethula ellame antha application cover pannu bro and features knjom add pannikko bro super ahd new
-> features new tabs antha maari ellame add pannikko bro and read me file thelivaa vum potru bro
-> features ellame and code la //cmd ellame remove pannu bro entha full project la code kulla ni
->
-> // cmd panni write panniruppa show athu ellame remove pannu bro and add the screen shots and videos
+> Add editing and deleting a bill. Go back through the document and make sure the application covers
+> everything it lists under Scope, Functional Requirements, What We're Looking For and What to
+> Submit. Add some more features and screens beyond that. Write the README clearly, covering all of
+> the features. Remove every `//` comment from the code across the whole project. Add the
+> screenshots and the video.
 
-*Add bill edit and delete. Cover everything the document asks for — Scope, Functional Requirements,
-What We're Looking For, What to Submit. Add some more features, new tabs. Write the README clearly
-with all the features. And remove every `//` comment from the code across the whole project. Add
-the screenshots and videos.*
-
-This is where the comments came out and the reasoning moved into the README, and where editing and
-deleting a bill were built.
+This is where the comments came out of the code and the reasoning behind each decision moved into
+the README, and where editing and deleting a bill were built.
 
 ---
 
 ### 7 — Naming, soft deletes and the counter screen
 
-> bro voided na enna antha key name and antha function ellam venam bro and db la soft delete ku
-> column podu bro
-> customer ku create, and edit , delete options venum bro and
-> new oredre page kjndo super ha pannu bro item section ha select card peruse pannu user friednly ya
-> erukkanum bro
-> order ha view and delelte button kudu bro and table buttons ellame super ha vai bro
-> table la propelry pagination ellame podu bro new order la customr ha drop down la create panni
-> vechu customer load pannu bro avanga thevai na new customer ha enter pannikkattum athu oru
-> featire bro and
-> antha tab ha
-> la customer, items choose athukku keela payment ha kondu vaa and side column la low stock show
-> pannikko bro
+> "Voided" is not a word I want in this — drop that name and the functions built around it, and use
+> a soft-delete column in the database instead. Customers need create, edit and delete. Rework the
+> new order page: the item section should use selectable cards so it is genuinely easy to use. Give
+> orders view and delete buttons, and make all the table buttons look right. Put proper pagination
+> on the tables. On the new order page, load existing customers into a dropdown, and allow a new
+> customer to be entered inline when one is needed — treat that as a feature. Order that screen as
+> customer, then items, then payment below them, with low stock in the side column.
 
-*What does "voided" mean? Drop that key name and those functions. Put a soft-delete column in the
-database instead. Customers need create, edit and delete. Make the new order page much better — the
-item section should use selectable cards, it has to be user friendly. Give orders view and delete
-buttons, and make all the table buttons good. Put proper pagination on the tables. On the new order
-page, load customers into a dropdown, and let them enter a new customer if they need to — that's a
-feature. In that tab put customer, then choose items, then payment below it, and show low stock in
-the side column.*
-
-"Voided" is the accounting word; nobody at a counter says it. It became plain delete, with the soft
-delete doing the work underneath. The counter screen was rebuilt around a product card grid.
+"Voided" is the accounting term; nobody standing at a counter says it. It became plain *delete*,
+with the soft delete doing the work underneath. The counter screen was rebuilt around a product
+card grid.
 
 ---
 
 ### 8 — Soft deletes everywhere
 
-> bro soft delte ellam table kum podu bro
+> Put soft deletes on every table, not just orders.
 
-*Put soft deletes on all the tables.*
-
-Every table got a `deleted_at`. That flushed out a real problem with the unique index on
-`order_items` — see [`README.md`](README.md).
+Every table got a `deleted_at`. That immediately surfaced a real problem with the unique index on
+`order_items` — a soft-deleted row still occupies it, so replacing lines during an edit would fail
+the second time the same product appeared. Documented in [`README.md`](README.md).
 
 ---
 
 ### 9 — Dashboard and product CRUD
 
-> bro dashboard ha ennum elebrate panni super ha show pannu bro
->
-> and items oda CRUD pannu ui la podu bro
-> and ella table kum pagintaion and ui la pagination podu bro proeprly ah bro
-
-*Make the dashboard more elaborate, show it really well. Put product CRUD in the UI. And put
-pagination on every table, done properly in the UI.*
+> Make the dashboard considerably richer — it should show a lot more than it does. Add product
+> create, edit and delete to the interface. And put pagination on every table, properly, in the UI
+> as well as the query.
 
 ---
 
 ### 10 — Shell, theme, setup, responsive
 
-> bro header and footer ha perfect ah pannu bro project oda theme clr atractive ah pannu bro
-> maathu bro and and ethu easy setup and responsive ah erukkanum bro web and mobile app ku
+> Get the header and footer right. The project's colour theme should be attractive — change it. It
+> also needs to be easy to set up, and properly responsive for both desktop and mobile.
 
-*Perfect the header and footer. Make the project's theme colour attractive — change it. And it
-should be easy to set up and responsive, for web and mobile.*
-
-Chose deep blue with a dark mode. Setup became one command.
+Chose a deep blue with a dark mode. Setup became a single command.
 
 ---
 
 ### 11 — Light only, and a plainer footer
 
-> bro okey always ligh ve erukkattumbro
-> footer la erunthu links ellame eduthuru bro
-> and clr theme mattum atractive ah change pannu bro
+> Keep it light at all times. Take the navigation links out of the footer. And change just the
+> colour theme to something attractive.
 
-*Okay, let it always be light. Take all the links out of the footer. And change just the colour
-theme to something attractive.*
-
-Dark mode came out. The palette went violet on warm grey.
+Dark mode came out. The palette went to violet on warm grey.
 
 ---
 
 ### 12 — Navy, and this log
 
-> bro dark blur la change panniru bro theme and
->
-> promts add pannu bro and screenshots um add pannu bro
-> avanga eppadi sonnangalo apdiye
+> Change the theme to dark blue. And add the prompt log and the screenshots, exactly as the brief
+> asks for them.
 
-*Change the theme to dark blue. And add the prompts and the screenshots, exactly the way they
-asked.*
-
-"dark blur" was ambiguous between a dark blue palette and a full dark mode, so the assistant asked
-rather than guessing. Dark blue it was. This file is the other half of that request.
+"Dark blue" was ambiguous between a navy palette on a light interface and a full dark mode, so the
+assistant asked rather than guessing. Navy on light it was. This file is the other half of the
+request.
