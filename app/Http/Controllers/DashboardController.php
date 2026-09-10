@@ -10,12 +10,16 @@ class DashboardController extends Controller
     public function __invoke(DashboardMetrics $metrics): View
     {
         return view('dashboard.index', [
-            'today' => $metrics->today(),
+            'headline' => $metrics->headline(),
             'allTime' => $metrics->allTime(),
+            'inventory' => $metrics->inventoryValue(),
             'trend' => $metrics->revenueTrend(),
+            'byHour' => $metrics->tradeByHour(),
             'bestSellers' => $metrics->bestSellers(),
+            'topCustomers' => $metrics->topCustomers(),
             'recentOrders' => $metrics->recentOrders(),
             'lowStock' => $metrics->lowStock(),
+            'movements' => $metrics->recentMovements(),
         ]);
     }
 }

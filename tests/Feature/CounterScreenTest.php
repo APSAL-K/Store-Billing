@@ -28,13 +28,17 @@ class CounterScreenTest extends TestCase
 
         $response = $this->get('/')->assertOk();
 
-        $this->assertSame(1, $response->viewData('today')['orders']);
-        $this->assertSame(300.0, $response->viewData('today')['revenue']);
-        $this->assertSame(3, $response->viewData('today')['units']);
+        $headline = $response->viewData('headline');
+
+        $this->assertSame(1, $headline['today']['orders']);
+        $this->assertSame(300.0, $headline['today']['revenue']);
+        $this->assertSame(3, $headline['today']['units']);
+        $this->assertSame(300.0, $headline['today']['average']);
         $this->assertCount(14, $response->viewData('trend'));
+        $this->assertCount(17, $response->viewData('byHour'), 'The chart covers 06:00 to 22:00.');
     }
 
-    public function test_the_dashboard_leaves_voided_bills_out_of_revenue(): void
+    public function test_the_dashboard_leaves_deleted_bills_out_of_revenue(): void
     {
         Queue::fake();
 
@@ -49,9 +53,10 @@ class CounterScreenTest extends TestCase
 
         $response = $this->get('/')->assertOk();
 
-        $this->assertSame(0, $response->viewData('today')['orders']);
-        $this->assertSame(0.0, $response->viewData('today')['revenue']);
+        $this->assertSame(0, $response->viewData('headline')['today']['orders']);
+        $this->assertSame(0.0, $response->viewData('headline')['today']['revenue']);
         $this->assertSame(1, $response->viewData('allTime')['deleted']);
+        $this->assertSame(0.0, $response->viewData('trend')->sum('revenue'));
     }
 
     public function test_the_counter_screen_lists_products_that_are_low_on_stock(): void
@@ -100,7 +105,7 @@ class CounterScreenTest extends TestCase
         $this->assertSame($newest->id, $response->viewData('orders')->first()->id);
     }
 
-    public function test_the_order_list_can_be_filtered_by_email_and_by_voided(): void
+    public function test_the_order_list_can_be_filtered_by_email_and_by_deleted(): void
     {
         Queue::fake();
 
@@ -116,7 +121,7 @@ class CounterScreenTest extends TestCase
         $this->deleteJson("/api/orders/{$orderId}")->assertNoContent();
 
         $this->assertCount(1, $this->get('/orders?email=divya@example.com')->viewData('orders'));
-        $this->assertCount(3, $this->get('/orders')->viewData('orders'), 'The voided bill is hidden by default.');
+        $this->assertCount(3, $this->get('/orders')->viewData('orders'), 'The deleted bill is hidden by default.');
         $this->assertCount(1, $this->get('/orders?deleted=1')->viewData('orders'));
     }
 
@@ -144,7 +149,7 @@ class CounterScreenTest extends TestCase
         $this->assertSame(5000.0, (float) $customers->first()->lifetime_value);
     }
 
-    public function test_a_customer_page_shows_their_bills_including_voided_ones(): void
+    public function test_a_customer_page_shows_their_bills_including_deleted_ones(): void
     {
         Queue::fake();
 
@@ -155,12 +160,12 @@ class CounterScreenTest extends TestCase
             'items' => [['product_id' => $product->id, 'quantity' => 1]],
         ])->json('data.id');
 
-        $voided = $this->postJson('/api/orders', [
+        $removed = $this->postJson('/api/orders', [
             'customer' => ['email' => 'walkin@example.com'],
             'items' => [['product_id' => $product->id, 'quantity' => 1]],
         ])->json('data.id');
 
-        $this->deleteJson("/api/orders/{$voided}")->assertNoContent();
+        $this->deleteJson("/api/orders/{$removed}")->assertNoContent();
 
         $customer = Customer::where('email', 'walkin@example.com')->sole();
         $response = $this->get("/customers/{$customer->id}")->assertOk();
