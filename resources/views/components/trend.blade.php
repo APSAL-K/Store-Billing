@@ -1,10 +1,10 @@
 @props(['change'])
 
 @if ($change === null)
-    <span class="badge bg-slate-100 text-slate-400">new</span>
+    <span class="badge bg-sunken text-faint">new</span>
 @else
     @php($up = $change >= 0)
-    <span class="badge {{ $up ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700' }}">
+    <span class="badge {{ $up ? 'bg-success-soft text-success' : 'bg-danger-soft text-danger' }}">
         <svg class="size-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             @if ($up)

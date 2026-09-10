@@ -5,9 +5,9 @@
     $threshold = $product->effectiveLowStockThreshold();
 
     [$classes, $label] = match (true) {
-        $stock === 0 => ['bg-rose-50 text-rose-700 ring-1 ring-rose-200', 'Out of stock'],
-        $stock <= $threshold => ['bg-amber-50 text-amber-700 ring-1 ring-amber-200', $stock . ' left'],
-        default => ['bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200', $stock . ' in stock'],
+        $stock === 0 => ['bg-danger-soft text-danger ring-1 ring-danger-line', 'Out of stock'],
+        $stock <= $threshold => ['bg-warn-soft text-warn ring-1 ring-warn-line', $stock . ' left'],
+        default => ['bg-success-soft text-success ring-1 ring-success-line', $stock . ' in stock'],
     };
 @endphp
 

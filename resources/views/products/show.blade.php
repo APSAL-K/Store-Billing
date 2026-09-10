@@ -22,9 +22,9 @@
         </div>
 
         <div class="card overflow-hidden">
-            <div class="flex items-center justify-between border-b border-slate-200 px-5 py-3.5">
-                <h2 class="text-sm font-semibold text-slate-900">Stock movements</h2>
-                <p class="text-xs text-slate-500">Every change to this product's stock, newest first</p>
+            <div class="flex items-center justify-between border-b border-line px-5 py-3.5">
+                <h2 class="text-sm font-semibold text-ink">Stock movements</h2>
+                <p class="text-xs text-muted">Every change to this product's stock, newest first</p>
             </div>
 
             @if ($movements->isEmpty())
@@ -32,7 +32,7 @@
             @else
                 <div class="overflow-x-auto">
                     <table class="w-full min-w-[40rem] text-sm">
-                        <thead class="border-b border-slate-200 bg-slate-50 text-left text-xs tracking-wide text-slate-500 uppercase">
+                        <thead class="border-b border-line bg-raised text-left text-xs tracking-wide text-muted uppercase">
                             <tr>
                                 <th class="px-5 py-3 font-semibold">Reason</th>
                                 <th class="px-3 py-3 font-semibold">Bill</th>
@@ -41,13 +41,13 @@
                                 <th class="w-44 px-5 py-3 text-right font-semibold">When</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-100">
+                        <tbody class="divide-y divide-line">
                             @foreach ($movements as $movement)
-                                <tr class="transition hover:bg-slate-50">
+                                <tr class="transition hover:bg-raised">
                                     <td class="px-5 py-3 whitespace-nowrap">
-                                        <span class="text-slate-800">{{ $movement->label() }}</span>
+                                        <span class="text-ink">{{ $movement->label() }}</span>
                                         @if ($movement->note)
-                                            <span class="block text-xs text-slate-400">{{ $movement->note }}</span>
+                                            <span class="block text-xs text-faint">{{ $movement->note }}</span>
                                         @endif
                                     </td>
                                     <td class="px-3 py-3">
@@ -57,15 +57,15 @@
                                                 {{ $movement->order->reference }}
                                             </a>
                                         @else
-                                            <span class="text-xs text-slate-300">&mdash;</span>
+                                            <span class="text-xs text-faint">&mdash;</span>
                                         @endif
                                     </td>
                                     <td class="tnum px-3 py-3 text-right font-semibold
-                                               {{ $movement->quantity_change < 0 ? 'text-rose-600' : 'text-emerald-600' }}">
+                                               {{ $movement->quantity_change < 0 ? 'text-danger' : 'text-success' }}">
                                         {{ $movement->quantity_change > 0 ? '+' : '' }}{{ $movement->quantity_change }}
                                     </td>
-                                    <td class="tnum px-3 py-3 text-right text-slate-600">{{ $movement->balance_after }}</td>
-                                    <td class="px-5 py-3 text-right text-slate-500">{{ $movement->created_at->format('d M Y, g:i A') }}</td>
+                                    <td class="tnum px-3 py-3 text-right text-body">{{ $movement->balance_after }}</td>
+                                    <td class="px-5 py-3 text-right text-muted">{{ $movement->created_at->format('d M Y, g:i A') }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -84,7 +84,7 @@
                            :class="error && 'field-input-invalid'"
                            @keydown.enter.prevent="confirm()">
                     <template x-if="error">
-                        <p class="mt-1.5 text-xs text-rose-600" x-text="error"></p>
+                        <p class="mt-1.5 text-xs text-danger" x-text="error"></p>
                     </template>
                 </x-field>
 

@@ -13,7 +13,7 @@
     <form method="GET" action="{{ route('orders.index') }}" class="card mb-5 flex flex-wrap items-end gap-3 p-4">
         <x-field label="Customer email" for="email" class="min-w-64 flex-1">
             <div class="relative">
-                <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">
+                <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-faint">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                          stroke-linecap="round" aria-hidden="true">
                         <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
@@ -24,12 +24,12 @@
             </div>
         </x-field>
 
-        <label class="flex cursor-pointer items-center gap-2 pb-2.5 text-sm text-slate-600">
+        <label class="flex cursor-pointer items-center gap-2 pb-2.5 text-sm text-body">
             <input type="checkbox" name="deleted" value="1" @checked($showingDeleted)
-                   class="size-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500/30">
+                   class="size-4 rounded border-line-strong text-brand-600 focus:ring-brand-500/30">
             Deleted only
             @if ($deletedCount > 0)
-                <span class="badge bg-rose-50 text-rose-700 ring-1 ring-rose-200">{{ $deletedCount }}</span>
+                <span class="badge bg-danger-soft text-danger ring-1 ring-danger-line">{{ $deletedCount }}</span>
             @endif
         </label>
 
@@ -60,7 +60,7 @@
         @else
             <div class="overflow-x-auto">
                 <table class="w-full min-w-[46rem] text-sm">
-                    <thead class="border-b border-slate-200 bg-slate-50 text-left text-xs tracking-wide text-slate-500 uppercase">
+                    <thead class="border-b border-line bg-raised text-left text-xs tracking-wide text-muted uppercase">
                         <tr>
                             <th class="px-5 py-3 font-semibold">Bill</th>
                             <th class="px-3 py-3 font-semibold">Customer</th>
@@ -71,28 +71,28 @@
                             <th class="w-52 px-5 py-3 text-right font-semibold">Actions</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100">
+                    <tbody class="divide-y divide-line">
                         @foreach ($orders as $order)
-                            <tr class="transition hover:bg-slate-50 {{ $order->trashed() ? 'opacity-55' : '' }}">
+                            <tr class="transition hover:bg-raised {{ $order->trashed() ? 'opacity-55' : '' }}">
                                 <td class="px-5 py-3 whitespace-nowrap">
                                     <a href="{{ route('orders.show', $order) }}"
                                        class="font-mono text-xs font-semibold text-brand-700 hover:underline">
                                         {{ $order->reference }}
                                     </a>
                                     @if ($order->trashed())
-                                        <span class="badge ml-1.5 bg-rose-50 text-rose-700 ring-1 ring-rose-200">Deleted</span>
+                                        <span class="badge ml-1.5 bg-danger-soft text-danger ring-1 ring-danger-line">Deleted</span>
                                     @endif
                                 </td>
                                 <td class="px-3 py-3 whitespace-nowrap">
-                                    <span class="block text-slate-800">{{ $order->customer->name }}</span>
-                                    <span class="block text-xs text-slate-400">{{ $order->customer->email }}</span>
+                                    <span class="block text-ink">{{ $order->customer->name }}</span>
+                                    <span class="block text-xs text-faint">{{ $order->customer->email }}</span>
                                 </td>
-                                <td class="tnum px-3 py-3 text-right text-slate-600">{{ $order->items_sum_quantity }}</td>
-                                <td class="tnum px-3 py-3 text-right text-slate-500">₹{{ number_format((float) $order->tax_total, 2) }}</td>
-                                <td class="tnum px-3 py-3 text-right font-semibold text-slate-900">₹{{ number_format((float) $order->grand_total, 2) }}</td>
+                                <td class="tnum px-3 py-3 text-right text-body">{{ $order->items_sum_quantity }}</td>
+                                <td class="tnum px-3 py-3 text-right text-muted">₹{{ number_format((float) $order->tax_total, 2) }}</td>
+                                <td class="tnum px-3 py-3 text-right font-semibold text-ink">₹{{ number_format((float) $order->grand_total, 2) }}</td>
                                 <td class="px-3 py-3 text-right">
-                                    <span class="block text-slate-600">{{ $order->placed_at->format('d M Y') }}</span>
-                                    <span class="tnum block text-xs text-slate-400">{{ $order->placed_at->format('g:i A') }}</span>
+                                    <span class="block text-body">{{ $order->placed_at->format('d M Y') }}</span>
+                                    <span class="tnum block text-xs text-faint">{{ $order->placed_at->format('g:i A') }}</span>
                                 </td>
                                 <td class="px-5 py-3">
                                     <div class="flex items-center justify-end gap-1">
@@ -118,8 +118,8 @@
     </div>
 
     <x-modal title="Delete this bill?" width="max-w-sm">
-        <p class="mt-1 text-sm text-slate-500">
-            <span class="font-mono font-semibold text-slate-700" x-text="target?.reference"></span> is removed
+        <p class="mt-1 text-sm text-muted">
+            <span class="font-mono font-semibold text-body" x-text="target?.reference"></span> is removed
             from the till and its <span class="tnum font-medium" x-text="target?.units"></span> units go back on
             the shelf. The record is kept and stays readable under the deleted filter.
         </p>

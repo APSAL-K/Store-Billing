@@ -15,7 +15,7 @@
         <form method="GET" action="{{ route('customers.index') }}" class="card mb-5 flex flex-wrap items-end gap-3 p-4">
             <x-field label="Search" for="search" class="min-w-64 flex-1">
                 <div class="relative">
-                    <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">
+                    <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-faint">
                         <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                              stroke-linecap="round" aria-hidden="true">
                             <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
@@ -51,7 +51,7 @@
             @else
                 <div class="overflow-x-auto">
                     <table class="w-full min-w-[46rem] text-sm">
-                        <thead class="border-b border-slate-200 bg-slate-50 text-left text-xs tracking-wide text-slate-500 uppercase">
+                        <thead class="border-b border-line bg-raised text-left text-xs tracking-wide text-muted uppercase">
                             <tr>
                                 <th class="px-5 py-3 font-semibold">Customer</th>
                                 <th class="w-24 px-3 py-3 text-right font-semibold">Bills</th>
@@ -60,21 +60,21 @@
                                 <th class="w-40 px-5 py-3 text-right font-semibold">Actions</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-100">
+                        <tbody class="divide-y divide-line">
                             @foreach ($customers as $customer)
-                                <tr class="transition hover:bg-slate-50">
+                                <tr class="transition hover:bg-raised">
                                     <td class="px-5 py-3 whitespace-nowrap">
                                         <a href="{{ route('customers.show', $customer) }}"
-                                           class="block font-medium text-slate-800 hover:text-brand-700 hover:underline">
+                                           class="block font-medium text-ink hover:text-brand-700 hover:underline">
                                             {{ $customer->name }}
                                         </a>
-                                        <span class="block text-xs text-slate-400">{{ $customer->email }}</span>
+                                        <span class="block text-xs text-faint">{{ $customer->email }}</span>
                                     </td>
-                                    <td class="tnum px-3 py-3 text-right text-slate-600">{{ $customer->orders_count }}</td>
-                                    <td class="tnum px-3 py-3 text-right font-semibold text-slate-900">
+                                    <td class="tnum px-3 py-3 text-right text-body">{{ $customer->orders_count }}</td>
+                                    <td class="tnum px-3 py-3 text-right font-semibold text-ink">
                                         ₹{{ number_format((float) $customer->lifetime_value, 2) }}
                                     </td>
-                                    <td class="px-3 py-3 text-right text-slate-500">
+                                    <td class="px-3 py-3 text-right text-muted">
                                         {{ $customer->last_order_at
                                             ? \Illuminate\Support\Carbon::parse($customer->last_order_at)->format('d M Y')
                                             : '—' }}
@@ -106,7 +106,7 @@
                            :class="errors.name && 'field-input-invalid'"
                            @keydown.enter.prevent="save()">
                     <template x-if="errors.name">
-                        <p class="mt-1.5 text-xs text-rose-600" x-text="errors.name"></p>
+                        <p class="mt-1.5 text-xs text-danger" x-text="errors.name"></p>
                     </template>
                 </x-field>
 
@@ -116,7 +116,7 @@
                            :class="errors.email && 'field-input-invalid'"
                            @keydown.enter.prevent="save()">
                     <template x-if="errors.email">
-                        <p class="mt-1.5 text-xs text-rose-600" x-text="errors.email"></p>
+                        <p class="mt-1.5 text-xs text-danger" x-text="errors.email"></p>
                     </template>
                 </x-field>
             </div>
@@ -130,8 +130,8 @@
         </x-modal>
 
         <x-modal title="Delete this customer?" show="confirming" width="max-w-sm">
-            <p class="mt-1 text-sm text-slate-500">
-                <span class="font-medium text-slate-700" x-text="editing?.name"></span> is removed from the
+            <p class="mt-1 text-sm text-muted">
+                <span class="font-medium text-body" x-text="editing?.name"></span> is removed from the
                 customer list. Bills already raised for them stay exactly as they are.
             </p>
 
