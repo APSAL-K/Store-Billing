@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Support\PerPage;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
@@ -20,7 +21,7 @@ class CustomerController extends Controller
             ->withSum('orders as lifetime_value', 'grand_total')
             ->withMax('orders as last_order_at', 'placed_at')
             ->orderByDesc('lifetime_value')
-            ->paginate(15)
+            ->paginate(PerPage::from($request))
             ->withQueryString();
 
         return view('customers.index', [
@@ -29,7 +30,7 @@ class CustomerController extends Controller
         ]);
     }
 
-    public function show(Customer $customer): View
+    public function show(Request $request, Customer $customer): View
     {
         return view('customers.show', [
             'customer' => $customer->loadCount('orders'),
@@ -38,7 +39,7 @@ class CustomerController extends Controller
                 ->withSum('items', 'quantity')
                 ->latest('placed_at')
                 ->latest('id')
-                ->paginate(15),
+                ->paginate(PerPage::from($request)),
             'lifetimeValue' => (float) $customer->orders()->sum('grand_total'),
         ]);
     }

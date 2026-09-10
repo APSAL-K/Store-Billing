@@ -3,19 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Support\PerPage;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
-    public function show(Product $product): View
+    public function show(Request $request, Product $product): View
     {
         return view('products.show', [
             'product' => $product,
             'movements' => $product->stockMovements()
                 ->with('order')
                 ->latest('id')
-                ->paginate(20),
+                ->paginate(PerPage::from($request)),
             'sold' => (int) $product->orderItems()->whereHas('order')->sum('quantity'),
         ]);
     }
@@ -31,7 +32,7 @@ class ProductController extends Controller
             ))
             ->when($onlyLowStock, fn ($query) => $query->lowOnStock())
             ->orderBy('name')
-            ->paginate(15)
+            ->paginate(PerPage::from($request))
             ->withQueryString();
 
         $all = Product::all();

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Support\PerPage;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
@@ -22,7 +23,7 @@ class OrderController extends Controller
             ))
             ->latest('placed_at')
             ->latest('id')
-            ->paginate(12)
+            ->paginate(PerPage::from($request))
             ->withQueryString();
 
         return view('orders.index', [

@@ -3,33 +3,80 @@
     'label' => 'records',
 ])
 
+@php
+    $current = $paginator->currentPage();
+    $last = $paginator->lastPage();
+
+    $pages = collect(range(1, $last))
+        ->filter(fn (int $page): bool => $page === 1
+            || $page === $last
+            || abs($page - $current) <= 1)
+        ->values();
+
+    $window = [];
+    $previous = 0;
+
+    foreach ($pages as $page) {
+        if ($previous > 0 && $page - $previous > 1) {
+            $window[] = null;
+        }
+
+        $window[] = $page;
+        $previous = $page;
+    }
+@endphp
+
 @if ($paginator->total() > 0)
     <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 px-5 py-3">
-        <p class="tnum text-xs text-slate-500">
-            Showing {{ $paginator->firstItem() }}&ndash;{{ $paginator->lastItem() }}
-            of {{ number_format($paginator->total()) }} {{ $label }}
-        </p>
+        <div class="flex items-center gap-3">
+            <p class="tnum text-xs whitespace-nowrap text-slate-500">
+                <span class="font-medium text-slate-700">{{ $paginator->firstItem() }}&ndash;{{ $paginator->lastItem() }}</span>
+                of {{ number_format($paginator->total()) }} {{ $label }}
+            </p>
+
+            @if ($paginator->total() > \App\Support\PerPage::OPTIONS[0])
+                <form method="GET" class="flex items-center gap-1.5">
+                    @foreach (request()->except(['per_page', 'page']) as $key => $value)
+                        <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                    @endforeach
+
+                    <label for="per-page-{{ $label }}" class="text-xs text-slate-400">Show</label>
+                    <select id="per-page-{{ $label }}" name="per_page" onchange="this.form.submit()"
+                            class="tnum rounded-md border border-slate-200 bg-white py-1 pr-7 pl-2 text-xs font-semibold text-slate-600 shadow-xs transition hover:border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15 focus:outline-none">
+                        @foreach (\App\Support\PerPage::OPTIONS as $option)
+                            <option value="{{ $option }}" @selected($paginator->perPage() === $option)>{{ $option }}</option>
+                        @endforeach
+                    </select>
+                </form>
+            @endif
+        </div>
 
         @if ($paginator->hasPages())
             <nav class="flex items-center gap-1" aria-label="Pagination">
                 @if ($paginator->onFirstPage())
-                    <span class="btn-row cursor-not-allowed opacity-40">Previous</span>
+                    <span class="btn-row cursor-not-allowed opacity-40" aria-hidden="true">Prev</span>
                 @else
-                    <a href="{{ $paginator->previousPageUrl() }}" rel="prev" class="btn-row">Previous</a>
+                    <a href="{{ $paginator->previousPageUrl() }}" rel="prev" class="btn-row">Prev</a>
                 @endif
 
-                @foreach ($paginator->getUrlRange(max(1, $paginator->currentPage() - 2), min($paginator->lastPage(), $paginator->currentPage() + 2)) as $page => $url)
-                    @if ($page == $paginator->currentPage())
-                        <span class="btn-row btn-row-primary tnum" aria-current="page">{{ $page }}</span>
-                    @else
-                        <a href="{{ $url }}" class="btn-row tnum">{{ $page }}</a>
-                    @endif
-                @endforeach
+                <span class="hidden items-center gap-1 sm:flex">
+                    @foreach ($window as $page)
+                        @if ($page === null)
+                            <span class="px-1 text-xs text-slate-300">&hellip;</span>
+                        @elseif ($page === $current)
+                            <span class="btn-row btn-row-primary tnum" aria-current="page">{{ $page }}</span>
+                        @else
+                            <a href="{{ $paginator->url($page) }}" class="btn-row tnum">{{ $page }}</a>
+                        @endif
+                    @endforeach
+                </span>
+
+                <span class="tnum px-1 text-xs text-slate-500 sm:hidden">{{ $current }} / {{ $last }}</span>
 
                 @if ($paginator->hasMorePages())
                     <a href="{{ $paginator->nextPageUrl() }}" rel="next" class="btn-row">Next</a>
                 @else
-                    <span class="btn-row cursor-not-allowed opacity-40">Next</span>
+                    <span class="btn-row cursor-not-allowed opacity-40" aria-hidden="true">Next</span>
                 @endif
             </nav>
         @endif
