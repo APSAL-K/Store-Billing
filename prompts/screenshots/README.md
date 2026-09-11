@@ -25,18 +25,3 @@ One image per prompt, twelve in all, matching the numbering in `PROMPTS.md`:
 | `11-light.png` | Light only, plainer footer, change the palette |
 | `12-navy.png` | Navy palette, and add this prompt log |
 
-## Taking them
-
-Scroll the Claude Code panel back to each prompt and capture the message bubble. Include enough of
-the reply that it is obvious which prompt produced what, but there is no need to capture whole
-answers — the reviewer wants to see what was asked.
-
-- **macOS:** `Cmd + Shift + 4`, then drag over the message. `Cmd + Shift + 5` for a window capture.
-- **Windows:** `Win + Shift + S`.
-
-A few long scrolling captures covering several prompts each are fine too, as long as every prompt
-in the table above appears somewhere and the filenames say which. If you do that, rename them
-`01-04-brief-and-database.png` and so on, and this table still tells the reviewer where to look.
-
-Once the files are here they need no wiring up — the README links to this folder, not to individual
-images.
